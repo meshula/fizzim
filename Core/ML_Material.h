@@ -22,18 +22,26 @@ public:
 
 class DiffuseMaterial : public Material {
 public:
-	DiffuseMaterial() { }
+	DiffuseMaterial() { 
+		for (int i = 0; i < 3; ++i) m_Diffuse[i] = 1.0f;
+	}
 	~DiffuseMaterial() { }
 
 	virtual void Bind() {
 		glEnable(GL_LIGHTING);
 		glEnable(GL_LIGHT0);
+		glColor3fv(m_Diffuse);
+		glEnable(GL_COLOR_MATERIAL);
 	}
 
 	virtual void Unbind() {
 		glDisable(GL_LIGHTING);
 		glDisable(GL_LIGHT0);
+		glColor3f(1.0f, 1.0f, 1.0f);
+		glDisable(GL_COLOR_MATERIAL);
 	}
+
+	float m_Diffuse[4];
 };
 
 #endif

@@ -47,12 +47,12 @@ public:
 		{
 			LastCRC=-1;
 			Instances=0;
-			Tbl=new DWORD[256];
+			Tbl=new uint32[256];
 			if(!Tbl) return;
 			Instances=1;
-			DWORD* ptr=Tbl;
-			for(DWORD n=0; n<256; ++n){
-				DWORD c=n;
+			uint32* ptr=Tbl;
+			for(uint32 n=0; n<256; ++n){
+				uint32 c=n;
 				for(int k=0; k<8; ++k) c=(c&1 ? 0xEDB88320^(c>>1) : c>>1);
 				*ptr++=c;
 			} 
@@ -68,32 +68,32 @@ public:
 	}
 
 	/* This is the following method without the optimised looping:
-	  DWORD From(const char* Buffer, DWORD Len, bool Partial=false) {
+	  uint32 From(const char* Buffer, uint32 Len, bool Partial=false) {
 		if(!Tbl || !Buffer) return 0;
-		register DWORD CRC=(Partial ? LastCRC : LastCRC=-1);
+		register uint32 CRC=(Partial ? LastCRC : LastCRC=-1);
 		while(Len--) CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
 		return LastCRC=~CRC;
 	  }
 	*/
 
-	uint32 Calculate(char const*const Buffer, uint32 Len, bool Partial=false) 
+	uint32 Calculate(char const* Buffer, uint32 Len, bool Partial=false) 
 	{
 		if(!Tbl || !Buffer) 
 			return 0;
 
-		register DWORD CRC=(Partial ? LastCRC : LastCRC=-1);
+		register uint32 CRC = (Partial ? LastCRC : LastCRC=-1);
 		uint32 ModLen=Len&7;
 		Len>>=3;
 		while(Len--) 
 		{
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
-			CRC=(CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
+			CRC = (CRC>>8)^Tbl[(CRC^(*Buffer++))&0xFF];
 		}
 
 		while(ModLen--) 
@@ -103,7 +103,7 @@ public:
 	}
 };
 
-DWORD* CCRC32::Tbl=0;       // Table of CRC values for every possible BYTE
-int    CCRC32::Instances=0; // Count of references to Tbl (Instances of CCRC32)
+uint32* CRC32::Tbl=0;       // Table of CRC values for every possible BYTE
+int     CRC32::Instances=0; // Count of references to Tbl (Instances of CCRC32)
 
 #endif

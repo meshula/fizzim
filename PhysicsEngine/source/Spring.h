@@ -73,8 +73,8 @@ namespace Physics {
 		// the following are derived values
 		bool			m_CenterAttachA;	//!< true if attachment point is center of mass, no torque if true
 		bool			m_CenterAttachB;	//!< true if attachment point is center of mass, no torque if true
-		RigidBody*		m_pBodyA;			//!< cached value
-		RigidBody*		m_pBodyB;			//!< cached value
+		RigidBody*		mp_BodyA;			//!< cached value
+		RigidBody*		mp_BodyB;			//!< cached value
 		Real			m_PrevLength;		//!< length during previous timestep
 	};
 

@@ -193,9 +193,9 @@ void RigidBody::Render()
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 
-		if (m_pCollideGeo->GetKind() == Physics::kC_Sphere) {
+		if (m_pCollideGeo->GetKind() == Collision::kC_Sphere) {
 			glTranslatef(m_StateT1.m_Position[0], m_StateT1.m_Position[1], m_StateT1.m_Position[2]);
-			float scale = (float) ((Physics::Sphere*) m_pCollideGeo)->m_Radius;
+			float scale = (float) ((Collision::Sphere*) m_pCollideGeo)->m_Radius;
 			glScalef(scale, scale, scale);
 		}
 		m_pRender->Render(); 

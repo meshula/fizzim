@@ -31,6 +31,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 #include "PMath.h"
 #include "PhysicsEngineDef.h"
+#include "CollisionEngineDef.h"
 
 /** @namespace	Physics 
 	@brief		Contains the interface to the physics engine
@@ -56,7 +57,7 @@ namespace Physics {
                         | |_) | (_) | (_| | |  __|__ \
                         |____/ \___/ \__,_|_|\___|___/
 		*/
-		//----------------------- Rigid Body Factory
+		//----------------------- Rigid RigidBody Factory
 
 		/**
 		* create an infinite plane and add it to the physics engine
@@ -97,22 +98,26 @@ namespace Physics {
 
 		//----------------------- RigidBody Properties
 
-		enum ERigidBodyBool		{ propActive, propUseGravity, propCollidable, propSpinnable, propTranslatable };
-		enum ERigidBodyScalar 	{ propAngularVelocityDamp, propLinearVelocityDamp, propMass };
-		enum ERigidBodyVector  	{ propExtent, propPosition, propVelocity };
-		enum ERigidBodyQuat 	{ propOrientation };
+		enum ERigidBodyBool			{ propActive, propUseGravity, propCollidable, propSpinnable, propTranslatable };
+		enum ERigidBodyScalar		{ propAngularVelocityDamp, propLinearVelocityDamp, propMass };
+		enum ERigidBodyVector		{ propExtent, propPosition, propVelocity };
+		enum ERigidBodyQuat 		{ propOrientation };
+		enum ERigidBodyVectorArray	{ propPositions };
+		enum ERigidBodyIntArray		{ propIndices };
 
-		void				SetRigidBodyBool			(uint32 id, ERigidBodyBool		prop,	bool value);
-		bool				GetRigidBodyBool			(uint32 id, ERigidBodyBool		prop);
-		void				SetRigidBodyScalar			(uint32 id, ERigidBodyScalar	prop,	Real value);
-		Real				GetRigidBodyScalar			(uint32 id, ERigidBodyScalar	prop);
-		void 				SetRigidBodyVec3f			(uint32 id, ERigidBodyVector	prop,	PMath::Vec3f value);
-		PMath::Vec3f*		GetRigidBodyVec3fPtr		(uint32 id, ERigidBodyVector	prop);
-		void				SetRigidBodyQuat			(uint32 id, ERigidBodyQuat		prop,	PMath::Quaternion value);
-		PMath::Quaternion*	GetRigidBodyQuatPtr			(uint32 id, ERigidBodyQuat		prop);
+		void				SetRigidBodyBool			(uint32 id, ERigidBodyBool			prop,	bool value);
+		bool				GetRigidBodyBool			(uint32 id, ERigidBodyBool			prop);
+		void				SetRigidBodyScalar			(uint32 id, ERigidBodyScalar		prop,	Real value);
+		Real				GetRigidBodyScalar			(uint32 id, ERigidBodyScalar		prop);
+		void 				SetRigidBodyVec3f			(uint32 id, ERigidBodyVector		prop,	PMath::Vec3f value);
+		PMath::Vec3f*		GetRigidBodyVec3fPtr		(uint32 id, ERigidBodyVector		prop);
+		void				SetRigidBodyQuat			(uint32 id, ERigidBodyQuat			prop,	PMath::Quaternion value);
+		PMath::Quaternion*	GetRigidBodyQuatPtr			(uint32 id, ERigidBodyQuat			prop);
+
+		void				SetRigidBodyVectorArray		(uint32 id,	ERigidBodyVectorArray	prop,	PMath::Vec3f const*const value, int byteStride, int count);
+		void				SetRigidBodyIntArray		(uint32 id, ERigidBodyIntArray		prop,	int const*const val, int count);
 
 		void				GetRigidBodyTransformMatrix	(uint32 id, PMath::Mat44& pResult);
-
 
 		/*
                       ____             _
@@ -122,7 +127,6 @@ namespace Physics {
                      |____/| .__/|_|  |_|_| |_|\__, |___/
                            |_|                 |___/
 		*/
-
 
 		//----------------------- Spring Factory
 
@@ -211,7 +215,7 @@ namespace Physics {
 		* 
 		* @param pCB The callback object to use when collisions occur.
 		*/
-		void				SetCollisionCallback(ICallback* pCB);
+		void				SetCollisionCallback(Collision::ICallback* pCB);
 
 		/// Set the minimum time step to ensure stability
 		void				SetMinTimeStep(Real dt);

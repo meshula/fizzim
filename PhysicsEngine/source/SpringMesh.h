@@ -65,13 +65,14 @@ namespace Physics {
 		virtual ~SpringMesh();
 
 		void SetPoints (
-			int count, 
-			PMath::Vec3f* pPoints);
+			int count,
+			int byteStride,				///< number of bytes from one xyz tuple to the next
+			PMath::Vec3f const*const pPoints);
 
 		/// Set an array of links ab, ab, ab, etc
 		void SetSprings(
 			int count,					///< number of links
-			uint32* pPoints				///< the point numbers
+			int const*const pPoints		///< the point numbers
 			);
 
 		/// Calculate rest lengths after springs and bodies have been set
@@ -92,7 +93,7 @@ namespace Physics {
 			PMath::Vec3f gravity		///< acceleration due to gravity length/sec
 			);
 
-		virtual	void					Render();														//!< render physics body, for debugging only
+		virtual	void					Render();			//!< render physics body, for debugging only
 
 		SpringMeshSpring*				m_Springs;
 		SpringMeshBody*					m_Points;

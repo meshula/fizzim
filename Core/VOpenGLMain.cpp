@@ -36,7 +36,8 @@ GLvoid KillGLWindow(GLvoid)								// Properly Kill The Window
 {
 }
 
-bool InitGL(int Width, int Height) {
+bool InitGL(int Width, int Height) 
+{
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);	
 	glClearDepth(1.0);					
 	glDepthFunc(GL_LESS);					
@@ -62,6 +63,7 @@ void VOpenGLMain::ConvertWindowCoordsToOrthoGL(float wX, float wY, float& x, flo
 }
 
 void VOpenGLMain::SetWindowSize(int width, int height, bool fullScreen) {
+
 	VMain::SetWindowSize(width, height, fullScreen);
 
 	uint32 flags = 0;
@@ -69,7 +71,13 @@ void VOpenGLMain::SetWindowSize(int width, int height, bool fullScreen) {
 		flags |= SDL_FULLSCREEN;
 	}
 
-	flags |= /*SDL_DOUBLEBUF | */SDL_RESIZABLE;
+	flags |= SDL_DOUBLEBUF | SDL_RESIZABLE;
+
+	static bool initted = false;
+	if (initted)
+		return;
+
+	initted = true;
 
 	int bits = 0;	// natural bit depth
 	if ( SDL_SetVideoMode(width, height, bits, SDL_OPENGL | flags) == NULL ) {

@@ -38,10 +38,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 	#include <GL/glu.h>	// Header File For The GLu32 Library
 #endif
 
+#include "opcode.h"
+
 #include "CollisionEngine.h"
 #include "PhysicsEngine.h"
 #include "RigidBody.h"
 #include "Spring.h"
+#include "Constraint.h"
 #include "SpringMesh.h"
 
 // hoists
@@ -52,12 +55,14 @@ using namespace Collision;
 using Physics::Engine;
 using Physics::RigidBody;
 using Physics::Spring;
+using Physics::Constraint;
 
 // typedefs 
 
 namespace Physics {
-	typedef std::map<int, RigidBody*> RigidBodyMap;		//!< maps unique IDs to RigidBody pointers.
-	typedef std::map<int, Spring*> SpringMap;
+	typedef std::map<int, RigidBody*>	RigidBodyMap;		//!< maps unique IDs to RigidBody pointers.
+	typedef std::map<int, Spring*>		SpringMap;
+	typedef std::map<int, Constraint*>	ConstraintMap;
 }
 
 
@@ -67,6 +72,24 @@ static uint32 UniqueID()
 {
 	static uint32 id = 0;
 	return ++id;
+}
+
+static int opcodeInitialized = 0;
+
+static void InitOpcode() {
+	if (opcodeInitialized == 0) {
+		Opcode::InitOpcode();
+	}
+	++opcodeInitialized;
+}
+
+static void ShutdownOpcode() {
+	if (opcodeInitialized > 0) {
+		opcodeInitialized--;
+		if (opcodeInitialized == 0) {
+			Opcode::CloseOpcode();
+		}
+	}
 }
 
 #define VERIFY_RIGIDBODY(value) {if (m_pAux->m_Bodies
@@ -130,6 +153,7 @@ namespace Physics {
 		Vec3f					m_Gravity;
 		Physics::RigidBodyMap	m_Bodies;				//!< contains all the bodies in the simulation
 		Physics::SpringMap		m_Springs;				//!< contains all the springs in the simulation
+		Physics::ConstraintMap	m_Constraints;			//!< contains all the constraints in the simulation
 		ICallback*				m_pCollisionCallback;
 		Collision::Engine		m_CollisionEngine;
 	};
@@ -139,6 +163,8 @@ Physics::Engine :: Engine()
 {
 	m_pAux = new PEAux();
 
+	InitOpcode();
+
 	//--------------------------------------------------------------
 	APILOG("------------------------\n");
 	APILOG("Physics();\n");
@@ -147,6 +173,8 @@ Physics::Engine :: Engine()
 
 Physics::Engine :: ~Engine()
 {
+	ShutdownOpcode();
+
 	delete m_pAux;
 	m_pAux = 0;
 
@@ -178,7 +206,7 @@ uint32 Physics::Engine :: AddRigidBodySphere(Real radius)
 {
 	uint32 id				= UniqueID();
 	RigidBody* pBody		= new RigidBody();
-	IGeometry* pCollide		= new Sphere(radius);
+	IGeometry* pCollide		= new Collision::Sphere(radius);
 	m_pAux->m_Bodies[id]	= pBody;				// add it to the sim
 
 	pBody->SetInertialKind(kI_Sphere);
@@ -196,7 +224,7 @@ uint32 Physics::Engine :: AddRigidBodyPlane(PMath::Plane& plane)
 {
 	uint32 id				= UniqueID();
 	RigidBody* pBody		= new RigidBody();
-	IGeometry* pCollide		= new Plane(plane);
+	IGeometry* pCollide		= new Collision::Plane(plane);
 	m_pAux->m_Bodies[id]	= pBody;				// add it to the sim
 
 	pBody->SetInertialKind(kI_Immobile);
@@ -218,8 +246,13 @@ uint32	Physics::Engine :: AddSpringMesh()
 	SpringMesh* pBody		= new SpringMesh();
 	m_pAux->m_Bodies[id]	= pBody;				// add it to the sim
 
+	pBody->SetInertialKind(kI_SpringMesh);
 	pBody->SetSpinnable(false);
 	pBody->SetTranslatable(false);
+
+	//--------------------------------------------------------------
+	APILOG("%d = AddSpringMesh()\n", id);
+	//--------------------------------------------------------------
 
 	return id;
 }
@@ -246,10 +279,27 @@ bool Physics::Engine :: RemoveRigidBody(uint32 id)
 			}
 		}
 
+		// scan all constraints, and remove any that are attached to the current object
+		Physics::ConstraintMap::iterator citer;
+		for (citer = m_pAux->m_Constraints.begin(); citer != m_pAux->m_Constraints.end(); ++citer) {
+			Constraint* pConstraint = citer->second;
+			if (pConstraint->GetKind() == DistanceConstraint::GetStaticKind()) {
+				DistanceConstraint* pDC = (DistanceConstraint*) pConstraint;
+				if (pDC->m_BodyA == id || pDC->m_BodyB == id) {
+					APILOG("RemoveRigidBody side-effect: Removing Constraint %d\n", citer->first);
+					RemoveConstraint(citer->first);
+					citer = m_pAux->m_Constraints.begin();
+				}
+			}
+		}
+
 		RigidBody* pBody = m_pAux->m_Bodies[id];
 		m_pAux->m_Bodies.erase(id);
 		delete pBody;
 		retval = true;
+	}
+	else {
+		APILOG("RemoveRigidBody - unknown id %d\n", id);
 	}
 
 	//--------------------------------------------------------------
@@ -261,20 +311,26 @@ bool Physics::Engine :: RemoveRigidBody(uint32 id)
 
 void Physics::Engine :: RemoveAll()
 {
-	Physics::RigidBodyMap::iterator rbIter;
-	Physics::SpringMap::iterator	springIter;
+	Physics::RigidBodyMap::iterator		rbIter;
+	Physics::SpringMap::iterator		springIter;
+	Physics::ConstraintMap::iterator	cIter;
 
 	for (rbIter = m_pAux->m_Bodies.begin(); rbIter != m_pAux->m_Bodies.end(); ++rbIter) {
 		RigidBody* pBody = rbIter->second;
 		delete pBody;
 	}
-	for (springIter = m_pAux->m_Springs.begin(); springIter != m_pAux->m_Springs.end(); ++ springIter) {
+	for (springIter = m_pAux->m_Springs.begin(); springIter != m_pAux->m_Springs.end(); ++springIter) {
 		Spring* pSpring = springIter->second;
 		delete pSpring;
+	}
+	for (cIter = m_pAux->m_Constraints.begin(); cIter != m_pAux->m_Constraints.end(); ++cIter) {
+		Constraint* pConstraint = cIter->second;
+		delete pConstraint;
 	}
 
 	m_pAux->m_Bodies.clear();
 	m_pAux->m_Springs.clear();
+	m_pAux->m_Constraints.clear();
 }
 
 uint32 Physics::Engine :: AddSpring()
@@ -299,6 +355,9 @@ bool Physics::Engine :: RemoveSpring(uint32 id)
 		delete pSpring;
 		retval = true;
 	}
+	else {
+		APILOG("RemoveSpring - unknown id %d\n", id);
+	}
 
 	//--------------------------------------------------------------
 	APILOG("%s = RemoveSpring(%d)\n", BOOLSTRING(retval), id);
@@ -320,6 +379,9 @@ void Physics::Engine :: SetRigidBodyBool(uint32 id, ERigidBodyBool prop, bool va
 		case propTranslatable:	pBody->SetTranslatable(value);	break;
 		}
 	}
+	else {
+		APILOG("SetBoolProperty - unknown id %d\n", id);
+	}
 
 	//--------------------------------------------------------------
 	APILOG("SetBoolProperty(%d, %s, %s)\n", id, BOOLPROPSTRING(prop), BOOLSTRING(value));
@@ -338,6 +400,9 @@ bool Physics::Engine :: GetRigidBodyBool(uint32 id, ERigidBodyBool prop)
 		case propSpinnable:		retval = pBody->GetSpinnable();		break;
 		case propTranslatable:	retval = pBody->GetTranslatable();	break;
 		}
+	}
+	else {
+		APILOG("GetRigidBodyBool - unknown id %d\n", id);
 	}
 	return retval;
 }
@@ -358,6 +423,9 @@ void Physics::Engine :: SetRigidBodyScalar(uint32 id, ERigidBodyScalar prop, Rea
 			break;
 		}
 	}
+	else {
+		APILOG("SetRigidBodyScalar - unknown id %d\n", id);
+	}
 
 	//--------------------------------------------------------------
 	APILOG("SetScalarProperty(%d, %s, %f)\n", id, SCALARPROPSTRING(prop), value);
@@ -375,6 +443,9 @@ Real Physics::Engine :: GetRigidBodyScalar(uint32 id, ERigidBodyScalar prop)
 		case propMass:					retval = pBody->GetMass();					break;
 		}
 	}
+	else {
+		APILOG("GetRigidBodyScalar - unknown id %d\n", id);
+	}
 	return retval;
 }
 
@@ -388,7 +459,7 @@ void Physics::Engine :: SetRigidBodyVec3f(uint32 id, ERigidBodyVector prop, Vec3
 			if (pBody->GetInertialKind() == kI_Sphere) {
 				GraphObj::Sphere* pSphere = (GraphObj::Sphere*) pBody->m_pRender;
 				pSphere->m_Radius = value[0] * kHalf;
-				Sphere* pCSphere = (Sphere*) pBody->m_pCollideGeo;
+				Collision::Sphere* pCSphere = (Collision::Sphere*) pBody->m_pCollideGeo;
 				pCSphere->m_Radius = value[0] * kHalf;
 			}
 			break;
@@ -396,6 +467,9 @@ void Physics::Engine :: SetRigidBodyVec3f(uint32 id, ERigidBodyVector prop, Vec3
 		case propPosition:				Vec3fSet(pBody->m_StateT1.m_Position, value);	break;
 		case propVelocity:				Vec3fSet(pBody->m_StateT1.m_Velocity, value);	break;
 		}
+	}
+	else {
+		APILOG("SetRigidBodyVec3f - unknown id %d\n", id);
 	}
 
 	//--------------------------------------------------------------
@@ -416,6 +490,9 @@ Vec3f* Physics::Engine :: GetRigidBodyVec3fPtr(uint32 id, ERigidBodyVector prop)
 		case propVelocity:				retval = &pBody->m_StateT1.m_Velocity;		break;
 		}
 	}
+	else {
+		APILOG("GetRigidBodyVec3fPtr - unknown id %d\n", id);
+	}
 	return retval;
 }
 
@@ -427,6 +504,9 @@ void Physics::Engine :: SetRigidBodyQuat(uint32 id, ERigidBodyQuat prop, Quatern
 		switch (prop) {
 		case propOrientation:			QuatSet(pBody->m_StateT1.m_Orientation, value);	break;
 		}
+	}
+	else {
+		APILOG("SetRigidBodyQuat - unknown id %d\n", id);
 	}
 }
 
@@ -441,7 +521,46 @@ Quaternion* Physics::Engine :: GetRigidBodyQuatPtr(uint32 id, ERigidBodyQuat pro
 		case propOrientation:			retval = &pBody->m_StateT1.m_Orientation;	break;
 		}
 	}
+	else {
+		APILOG("GetRigidBodyQuatPtr - unknown id %d\n", id);
+	}
 	return retval;
+}
+
+void Physics::Engine :: SetRigidBodyVectorArray		(uint32 id,	ERigidBodyVectorArray	prop,	PMath::Vec3f const*const value, int byteStride, int count)
+{
+	if (m_pAux->m_Bodies.count(id) != 0) {
+		RigidBody* pBody = m_pAux->m_Bodies[id];
+		switch (prop) {
+		case propPositions:
+			if (pBody->GetInertialKind() == kI_SpringMesh) {
+				SpringMesh* pSM = (SpringMesh*) pBody;
+				pSM->SetPoints(count, byteStride, value);
+			}
+			break;
+		}
+	}
+	else {
+		APILOG("SetRigidBodyVectorArray - unknown id %d\n", id);
+	}
+}
+
+void Physics::Engine :: SetRigidBodyIntArray		(uint32 id, ERigidBodyIntArray		prop,	int const*const val, int count)
+{
+	if (m_pAux->m_Bodies.count(id) != 0) {
+		RigidBody* pBody = m_pAux->m_Bodies[id];
+		switch (prop) {
+		case propIndices:
+			if (pBody->GetInertialKind() == kI_SpringMesh) {
+				SpringMesh* pSM = (SpringMesh*) pBody;
+				pSM->SetSprings(count, val);
+			}
+			break;
+		}
+	}
+	else {
+		APILOG("SetRigidBodyIntArray - unknown id %d\n", id);
+	}
 }
 
 void Physics::Engine :: GetRigidBodyTransformMatrix(uint32 id, Mat44& pResult)
@@ -457,6 +576,9 @@ void Physics::Engine :: GetRigidBodyTransformMatrix(uint32 id, Mat44& pResult)
 		}
 		Mat44SetTranslation(pResult, pBody->m_StateT1.m_Position);
 	}
+	else {
+		APILOG("GetRigidBodyTransformMatrix - unknown id %d\n", id);
+	}
 }
 
 void Physics::Engine :: SetSpringBool(uint32 id, ESpringBool prop, bool value)
@@ -466,6 +588,9 @@ void Physics::Engine :: SetSpringBool(uint32 id, ESpringBool prop, bool value)
 		if (prop == propResistCompression) {
 			pSpring->m_ResistCompression = value;
 		}
+	}
+	else {
+		APILOG("SetSpringBool - unknown id %d\n", id);
 	}
 }
 
@@ -478,6 +603,9 @@ bool Physics::Engine :: GetSpringBool(uint32 id, ESpringBool prop)
 			retval = pSpring->m_ResistCompression;
 		}
 	}
+	else {
+		APILOG("GetSpringBool - unknown id %d\n", id);
+	}
 	return retval;
 }
 
@@ -488,7 +616,7 @@ void Physics::Engine :: SetSpringUInt32(uint32 id, ESpringUint32 prop,	uint32 va
 		if (prop == propBodyA) {
 			if (m_pAux->m_Bodies.count(value) != 0) {
 				pSpring->m_BodyA = value;
-				pSpring->m_pBodyA = m_pAux->m_Bodies[value];
+				pSpring->mp_BodyA = m_pAux->m_Bodies[value];
 			}
 			else {
 				APILOG("Can't attach spring to nonexistant rigid body\n");
@@ -497,12 +625,15 @@ void Physics::Engine :: SetSpringUInt32(uint32 id, ESpringUint32 prop,	uint32 va
 		else if (prop == propBodyB) {
 			if (m_pAux->m_Bodies.count(value) != 0) {
 				pSpring->m_BodyB = value;
-				pSpring->m_pBodyB = m_pAux->m_Bodies[value];
+				pSpring->mp_BodyB = m_pAux->m_Bodies[value];
 			}
 			else {
 				APILOG("Can't attach spring to nonexistant rigid body\n");
 			}
 		}
+	}
+	else {
+		APILOG("SetSpringUInt32 - unknown id %d\n", id);
 	}
 }
 
@@ -517,6 +648,9 @@ uint32 Physics::Engine :: GetSpringUInt32(uint32 id, ESpringUint32 prop)
 		else if (prop == propBodyB) {
 			retval = pSpring->m_BodyB;
 		}
+	}
+	else {
+		APILOG("GetSpringUInt32 - unknown id %d\n", id);
 	}
 	return retval;
 }
@@ -543,6 +677,9 @@ void Physics::Engine :: SetSpringScalar(uint32 id, ESpringScalar prop,	Real valu
 				break;
 		}
 	}
+	else {
+		APILOG("SetSpringScalar - unknown id %d\n", id);
+	}
 }
 
 Real Physics::Engine :: GetSpringScalar(uint32 id, ESpringScalar prop)
@@ -555,6 +692,9 @@ Real Physics::Engine :: GetSpringScalar(uint32 id, ESpringScalar prop)
 			case propSpringDamping:		retval = pSpring->m_Damping;	break;
 			case propSpringRestLength:	retval = pSpring->m_RestLength;	break;
 		}
+	}
+	else {
+		APILOG("GetSpringScalar - unknown id %d\n", id);
 	}
 	return retval;
 }
@@ -572,6 +712,9 @@ void Physics::Engine :: SetSpringVec3f(uint32 id, ESpringVector prop,	PMath::Vec
 			pSpring->m_CenterAttachB = Vec3fIsZero(value);
 		}
 	}
+	else {
+		APILOG("SetSpringVec3f - unknown id %d\n", id);
+	}
 }
 
 PMath::Vec3f* Physics::Engine :: GetSpringVec3fPtr(uint32 id, ESpringVector prop)
@@ -586,9 +729,104 @@ PMath::Vec3f* Physics::Engine :: GetSpringVec3fPtr(uint32 id, ESpringVector prop
 			retval = &pSpring->m_PosB;
 		}
 	}
+	else {
+		APILOG("GetSpringVec3fPtr - unknown id %d\n", id);
+	}
 	return retval;
 }
 
+
+uint32 Physics::Engine :: AddDistanceConstraint(uint32 a, uint32 b, Real distance, Real tolerance)
+{
+	uint32 id = UniqueID();
+	RigidBody* pBodyA = m_pAux->m_Bodies[a];
+	RigidBody* pBodyB = m_pAux->m_Bodies[b];
+	DistanceConstraint* pConstraint = new DistanceConstraint(a, pBodyA, b, pBodyB, distance, tolerance);
+	m_pAux->m_Constraints[id] = pConstraint;
+	return id;
+}
+
+bool Physics::Engine :: RemoveConstraint(uint32 id)
+{
+	bool retval = false;
+	if (m_pAux->m_Constraints.count(id) != 0) {
+		Constraint* pConstraint = m_pAux->m_Constraints[id];
+		m_pAux->m_Constraints.erase(id);
+		delete pConstraint;
+		retval = true;
+	}
+	else {
+		APILOG("RemoveConstraint - unknown id %d\n", id);
+	}
+
+	//--------------------------------------------------------------
+	APILOG("%s = RemoveConstraint(%d)\n", BOOLSTRING(retval), id);
+	//--------------------------------------------------------------
+
+	return retval;
+}
+
+void Physics::Engine :: SetConstraintBool(uint32 id, EConstraintBool prop, bool value)
+{
+	if (m_pAux->m_Constraints.count(id) != 0) {
+		Constraint* pConstraint = m_pAux->m_Constraints[id];
+		if (prop == propConstraintActive) {
+			pConstraint->m_Active = value;
+		}
+	}
+	else {
+		APILOG("SetConstraintBool - unknown id %d\n", id);
+	}
+}
+
+bool Physics::Engine :: GetConstraintBool(uint32 id, EConstraintBool prop)
+{
+	bool retval = false;
+	if (m_pAux->m_Springs.count(id) != 0) {
+		Constraint* pConstraint = m_pAux->m_Constraints[id];
+		if (prop == propConstraintActive) {
+			retval = pConstraint->m_Active;
+		}
+	}
+	else {
+		APILOG("GetConstraintBool - unknown id %d\n", id);
+	}
+	return retval;
+}
+
+void Physics::Engine :: SetConstraintScalar(uint32 id, EConstraintScalar prop, Real value)
+{
+	if (m_pAux->m_Constraints.count(id) != 0) {
+		Constraint* pConstraint = m_pAux->m_Constraints[id];
+		if (pConstraint->GetKind() == DistanceConstraint::GetStaticKind()) {
+			DistanceConstraint* pDC = (DistanceConstraint*) pConstraint;
+			if (prop == propConstraintDistance) {
+				pDC->m_Distance = value;
+			}
+		}
+	}
+	else {
+		APILOG("SetConstraintScalar - unknown id %d\n", id);
+	}
+}
+
+Real Physics::Engine :: GetConstraintScalar(uint32 id, EConstraintScalar prop)
+{
+	Real retval = k0;
+	if (m_pAux->m_Springs.count(id) != 0) {
+		Constraint* pConstraint = m_pAux->m_Constraints[id];
+		if (pConstraint->GetKind() == DistanceConstraint::GetStaticKind()) {
+			DistanceConstraint* pDC = (DistanceConstraint*) pConstraint;
+			if (prop == propConstraintDistance) {
+				retval = pDC->m_Distance;
+			}
+		}
+	}
+	else {
+		APILOG("GetConstraintScalar - unknown id %d\n", id);
+	}
+	return retval;
+}
 
 void Physics::Engine :: AddImpulse(uint32 id, Vec3f force)
 {
@@ -597,6 +835,9 @@ void Physics::Engine :: AddImpulse(uint32 id, Vec3f force)
 		if (pBody->GetTranslatable()) {
 			pBody->m_Acc.AddForce(force);
 		}
+	}
+	else {
+		APILOG("AddImpulse - unknown id %d\n", id);
 	}
 }
 
@@ -607,6 +848,9 @@ void Physics::Engine :: AddTwist(uint32 id, Vec3f torque)
 		if (pBody->GetSpinnable()) {
 			pBody->m_Acc.AddTorque(torque);
 		}
+	}
+	else {
+		APILOG("AddTwist - unknown id %d\n", id);
 	}
 }
 
@@ -620,6 +864,9 @@ void Physics::Engine :: StopMoving(uint32 id)
 			Vec3fZero(pBody->m_StateT1.m_Velocity);
 		}
 	}
+	else {
+		APILOG("StopMoving - unknown id %d\n", id);
+	}
 }
 
 void Physics::Engine :: StopSpinning(uint32 id)
@@ -631,6 +878,9 @@ void Physics::Engine :: StopSpinning(uint32 id)
 			Vec3fZero(pBody->m_StateT0.m_AngularVelocity);
 			Vec3fZero(pBody->m_StateT1.m_AngularVelocity);
 		}
+	}
+	else {
+		APILOG("StopSpinning - unknown id %d\n", id);
 	}
 }
 
@@ -657,8 +907,9 @@ void Physics::Engine :: Simulate(Real dt)
 	}
 
 	for (int i = 0; i < steps; ++i) {
-		Physics::RigidBodyMap::iterator rbIter;
-		Physics::SpringMap::iterator	springIter;
+		Physics::RigidBodyMap::iterator		rbIter;
+		Physics::SpringMap::iterator		springIter;
+		Physics::ConstraintMap::iterator	cIter;
 
 		// reset simulation
 
@@ -694,8 +945,8 @@ void Physics::Engine :: Simulate(Real dt)
 		for (springIter = m_pAux->m_Springs.begin(); springIter != m_pAux->m_Springs.end(); ++ springIter) {
 			Spring* pSpring = springIter->second;
 
-			Vec3f* pPosA = &pSpring->m_pBodyA->m_StateT1.m_Position;
-			Vec3f* pPosB = &pSpring->m_pBodyB->m_StateT1.m_Position;
+			Vec3f* pPosA = &pSpring->mp_BodyA->m_StateT1.m_Position;
+			Vec3f* pPosB = &pSpring->mp_BodyB->m_StateT1.m_Position;
 
 			Vec3f direction;
 			Vec3fSubtract(direction, *pPosA, *pPosB);
@@ -712,9 +963,18 @@ void Physics::Engine :: Simulate(Real dt)
 
 				pSpring->m_PrevLength = length;
 
-				Vec3fMultiplyAccumulate(pSpring->m_pBodyA->m_Acc.m_Force, -force, direction);
-				Vec3fMultiplyAccumulate(pSpring->m_pBodyB->m_Acc.m_Force,  force, direction);
+				Vec3fMultiplyAccumulate(pSpring->mp_BodyA->m_Acc.m_Force, -force, direction);
+				Vec3fMultiplyAccumulate(pSpring->mp_BodyB->m_Acc.m_Force,  force, direction);
 			}
+		}
+
+		// loop over all contraints
+		//		if active, 
+		//			satisfy constraints
+
+		for (cIter = m_pAux->m_Constraints.begin(); cIter != m_pAux->m_Constraints.end(); ++ cIter) {
+			Constraint* pConstraint = cIter->second;
+			pConstraint->Apply();
 		}
 
 		// loop over all objects,
@@ -731,10 +991,6 @@ void Physics::Engine :: Simulate(Real dt)
 				pBody->Integrate2(dt, m_pAux->m_Gravity);
 			}
 		}
-
-		// loop over all objects,
-		//		if active, 
-		//			satisfy constraints
 
 		// loop over all objects,
 		//		if active, 
@@ -755,38 +1011,38 @@ void Physics::Engine :: Simulate(Real dt)
 			}
 		}
 
-	//
-	// this demo is intended to demonstrate integration, not collisiond detection and integration,
-	// so this resolution function is a toy.
-	//
-	// this simple version assumes all collisions must be resolved, which doesn't work in real life.
-	// It only works in this demo because there are very few objects, and few simultaneous
-	// collisions (usually zero or one) on any particular object at any particular time.
-	//
-	// the simplest possible solution usable in a game or other simulation 
-	// is the Quake style resolution described in 
-	//
-	// Generic Collision Detection for Games Using Ellipsoids
-	// by Paul Nettle (do a Google search)
-	//
-	// The basic idea of Paul's system is to search for the earliest collision for each object,
-	//	and resolve only that one. After the resolution, re-detect collisions, and loop until 
-	//	no more collisions exist.
-	//
-	// a real physics engine would need a system such as that described in
-	//
-	// Fast Contact Reduction for Dynamics Simulation
-	// Adam Moravanszky, and Pierre Terdiman
-	// Games Programming Gems IV
-	//
-	// If a robust scheme such as that one is used, a constraint system or a temporary spring
-	// solution can be used to resolve instead.
-	//
-	// Nonetheless, whatever solution you choose, you should attempt, if possible, to use one
-	// of the resolvers here, because they are analytic, correct, and as fast as possible if
-	// multiple simultaneous collisions on the same object don't need to be resolved, and if
-	// the involved objects are combinations of spheres and planes.
-	//
+		//
+		// this demo is intended to demonstrate integration, not collisiond detection and integration,
+		// so this resolution function is a toy.
+		//
+		// this simple version assumes all collisions must be resolved, which doesn't work in real life.
+		// It only works in this demo because there are very few objects, and few simultaneous
+		// collisions (usually zero or one) on any particular object at any particular time.
+		//
+		// the simplest possible solution usable in a game or other simulation 
+		// is the Quake style resolution described in 
+		//
+		// Generic Collision Detection for Games Using Ellipsoids
+		// by Paul Nettle (do a Google search)
+		//
+		// The basic idea of Paul's system is to search for the earliest collision for each object,
+		//	and resolve only that one. After the resolution, re-detect collisions, and loop until 
+		//	no more collisions exist.
+		//
+		// a real physics engine would need a system such as that described in
+		//
+		// Fast Contact Reduction for Dynamics Simulation
+		// Adam Moravanszky, and Pierre Terdiman
+		// Games Programming Gems IV
+		//
+		// If a robust scheme such as that one is used, a constraint system or a temporary spring
+		// solution can be used to resolve instead.
+		//
+		// Nonetheless, whatever solution you choose, you should attempt, if possible, to use one
+		// of the resolvers here, because they are analytic, correct, and as fast as possible if
+		// multiple simultaneous collisions on the same object don't need to be resolved, and if
+		// the involved objects are combinations of spheres and planes.
+		//
 
 		std::vector<Contact*>::iterator contactIter;
 
@@ -828,8 +1084,8 @@ void Physics::Engine :: Render()
 	for (sIter = m_pAux->m_Springs.begin(); sIter != m_pAux->m_Springs.end(); ++sIter) {
 		Spring* pSpring = sIter->second;
 		glBegin(GL_LINES);
-		Vec3f* pPosA = &pSpring->m_pBodyA->m_StateT1.m_Position;
-		Vec3f* pPosB = &pSpring->m_pBodyB->m_StateT1.m_Position;
+		Vec3f* pPosA = &pSpring->mp_BodyA->m_StateT1.m_Position;
+		Vec3f* pPosB = &pSpring->mp_BodyB->m_StateT1.m_Position;
 		glVertex3f((*pPosA)[0], (*pPosA)[1], (*pPosA)[2]);
 		glVertex3f((*pPosB)[0], (*pPosB)[1], (*pPosB)[2]);
 		glEnd();

@@ -51,22 +51,28 @@ namespace Physics {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-	void SpringMesh :: SetPoints(int numPoints, Vec3f* pPoints)
+	void SpringMesh :: SetPoints(int numPoints, int byteStride, Vec3f const*const pPoints)
 	{
 		m_Points	= new SpringMeshBody[numPoints];
 		m_NumPoints = numPoints;
 
+		char* pCurr = (char*) pPoints;
+
 		for (int i = 0; i < m_NumPoints; ++i) {
-			PMath::Vec3fSet(m_Points[i].m_Pos0, pPoints[i]);
-			PMath::Vec3fSet(m_Points[i].m_Pos1, pPoints[i]);
+			Vec3f* pCurrPoint = (Vec3f*) pCurr;
+
+			PMath::Vec3fSet(m_Points[i].m_Pos0, *pCurrPoint);
+			PMath::Vec3fSet(m_Points[i].m_Pos1, *pCurrPoint);
 			PMath::Vec3fZero(m_Points[i].m_Vel0);
 			PMath::Vec3fZero(m_Points[i].m_Vel1);
+
+			pCurr += byteStride;
 		}
 	}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-	void SpringMesh :: SetSprings(int numSprings, uint32* pBodies)
+	void SpringMesh :: SetSprings(int numSprings, int const*const pBodies)
 	{
 		m_Springs 	 = new SpringMeshSpring[numSprings];
 		m_NumSprings = numSprings;

@@ -33,6 +33,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #define _RIGIDBODY_H_
 
 #include "GraphObj.h"
+#include "CollisionEngineDef.h"
 #include "PhysicsEngineDef.h"
 #include "DynamicState.h"
 
@@ -61,7 +62,7 @@ public:
 	}
 
 	void AddForce(PMath::Vec3f a)		{ PMath::Vec3fAdd(m_Force, a); }
-	void AddTorque(PMath::Vec3f a)	{ PMath::Vec3fAdd(m_Torque, a); }
+	void AddTorque(PMath::Vec3f a)		{ PMath::Vec3fAdd(m_Torque, a); }
 
 	PMath::Vec3f	m_Force;
 	PMath::Vec3f	m_Torque;
@@ -84,12 +85,12 @@ public:
 	virtual	void			Integrate1(Real dt, PMath::Vec3f gravity);
 	virtual	void			Integrate2(Real dt, PMath::Vec3f gravity);
 
-	virtual void			SetCollisionObject(Physics::IGeometry* collide) { m_pCollideGeo = collide; }
+	virtual void			SetCollisionObject(Collision::IGeometry* collide) { m_pCollideGeo = collide; }
 	virtual void			SetInertialKind(EInertialKind ikind);
 	inline	EInertialKind	GetInertialKind() const { return m_InertialKind; }
 	virtual void			SetMass(Real mass);
-	inline	Real			GetMass() const { return m_Mass; }
-	inline	Real			GetOOMass() const { return m_OOMass; }
+	inline	Real			GetMass() const { return m_Translatable ? m_Mass : Real(1.0e6f); }	// if it can't move, it weighs 1,000,000
+	inline	Real			GetOOMass() const { return m_Translatable ? m_OOMass : k0; }		// if it can't move, it weighs 1,000,000
 			void			CalculateInertiaTensor();
 
 	virtual	void			Renormalize() { }
@@ -122,7 +123,7 @@ public:
 	DynamicState			m_StateT1;				//!< state at the end of the time step
 	PMath::Vec3f			m_Extent;				//!< extent in each dimension from local origin
 
-	Physics::IGeometry*		m_pCollideGeo;			//!< pointer to collision geometry
+	Collision::IGeometry*	m_pCollideGeo;			//!< pointer to collision geometry
 	PMath::Vec3f			m_InertiaITD;			//!< Inverse of Inertia Tensor Diagonal
 	bool					m_Collided;				//!< indicates collided during the frame
 

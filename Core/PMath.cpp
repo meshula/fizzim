@@ -31,7 +31,7 @@ using namespace PMath;
 
 
 
-void PMath::Mat44Rotate(Mat44& result, const Mat44 src, const Vec3f args)
+void PMath::Mat44Rotate(Real *const result, Real const*const src, const Vec3f args)
 {
 	Real sinx, cosx, siny, cosy, sinz, cosz;
 	sinx = Sin(args[0]);
@@ -79,7 +79,7 @@ void PMath::Mat44Rotate(Mat44& result, const Mat44 src, const Vec3f args)
 }
 
 
-void PMath::QuatToBasis(Mat44& pResult, const Quaternion a)
+void PMath::QuatToBasis(Real *const pResult, const Quaternion a)
 {
 	Real x = a[0];
 	Real y = a[1];
@@ -238,7 +238,7 @@ void PMath::Vec3fPointOnUnitSphere (Vec3f& v, const Vec3f p, const Vec3f cueCent
 	  Graphics Gems Vol. 1.  Andrew Glassner, Ed.  Addison-Wesley.
 -------------------------------------------------------------------------------------------------*/
 
-void PMath::Mat44SetRotateVectorToVector (Mat44& result, const Vec3f theop, const Vec3f theoq) {
+void PMath::Mat44SetRotateVectorToVector (Real *const result, const Vec3f theop, const Vec3f theoq) {
 	Vec3f   op; Vec3fSet(op, theop); PMath::Vec3fNormalize(op, op);
 	Vec3f   oq; Vec3fSet(oq, theoq); PMath::Vec3fNormalize(oq, oq);
 	Vec3f   a;
@@ -277,7 +277,7 @@ Determine the axis and angle of rotation from the last 2 locations of the mouse
 relative to the Virtual Sphere cue circle.  
 -------------------------------------------------------------------------------------------------*/
 
-void PMath::Mat44TrackBall(Mat44& result, const Vec3f p, const Vec3f q, const Vec3f cueCenter, Real cueRadius) {
+void PMath::Mat44TrackBall(Real *const result, const Vec3f p, const Vec3f q, const Vec3f cueCenter, Real cueRadius) {
 	Vec3f op, oq;
 
 	// Project mouse points to 3-D points on the +z hemisphere of a unit sphere.

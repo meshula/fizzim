@@ -80,7 +80,6 @@ namespace PMath {
 	typedef Real Vec3f[3];			///< A 3 float vector; SIMD implementation would need 4 components
 	typedef Real Vec4f[4];			///< 4 component float vector
 	typedef Real Quaternion[4];		///< Stored as xi, yj, zk, w; w is the real component
-	typedef Real Mat44[16];			///< stored in column major format (like OpenGL)
 
 	/// return a random number between zero and one
 	inline Real randf() {
@@ -105,6 +104,7 @@ namespace PMath {
 
 	template <class Type> Type Min(Type a, Type b)								{ return (a < b) ? a : b; }
 	template <class Type> Type Max(Type a, Type b)								{ return (a > b) ? a : b; }
+	template <class Type> Type Clamp(Type a, Type mini, Type maxi)				{ return Max(Min(a,maxi),mini); }
 
 	/// Square a real number
 	inline	Real Sqr(Real a)													{ return a * a; }
@@ -208,41 +208,41 @@ namespace PMath {
 	inline	Real Vec4fDot(const Vec4f a, const Vec4f b)							{ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3]; }
 
 	/// Create a basis matrix from a quaternion. Only sets upper left 3x3 portion
-			void QuatToBasis(Mat44& pResult, const Quaternion a);
+			void QuatToBasis(Real* pMatrixResult, const Quaternion a);
 
 	/// Copy one quaternion to another
 	inline	void QuatSet(Quaternion& a, const Quaternion b)						{ a[0] = b[0]; a[1] = b[1]; a[2] = b[2]; a[3] = b[3]; }
 
 			void QuatFromEuler(Quaternion& a, Real roll, Real pitch, Real yaw);
 	
-	inline	void Mat44Set(Mat44& pResult, float const*const pMatrix)			{ for (int i = 0; i < 16; ++i) { pResult[i] = pMatrix[i]; } }
+	inline	void Mat44Set(Real *const pResult, Real const*const pMatrix)			{ for (int i = 0; i < 16; ++i) { pResult[i] = pMatrix[i]; } }
 
 
 	/// Set the first 3 elements of the translation column of a matrix
-	inline	void Mat44SetTranslation(Mat44& pResult, const Vec3f a)				{ pResult[12] = a[0]; pResult[13] = a[1]; pResult[14] = a[2]; }
+	inline	void Mat44SetTranslation(Real *const pResult, const Vec3f a)				{ pResult[12] = a[0]; pResult[13] = a[1]; pResult[14] = a[2]; }
 
 	/// Set a matrix to identity
-	inline	void Mat44Identity(Mat44& pResult)									{ for (int i = 1; i < 15; ++i) pResult[i] = k0; 	pResult[0] = pResult[5] = pResult[10] = pResult[15] = k1; }
+	inline	void Mat44Identity(Real *const pResult)									{ for (int i = 1; i < 15; ++i) pResult[i] = k0; 	pResult[0] = pResult[5] = pResult[10] = pResult[15] = k1; }
 
-	inline	void Mat44LoadTransposed(Mat44& pResult, const Vec3f x, const Vec3f y, const Vec3f z) {
+	inline	void Mat44LoadTransposed(Real *const pResult, const Vec3f x, const Vec3f y, const Vec3f z) {
 		pResult[0] = x[0]; pResult[4] = x[1]; pResult[8] = x[2];
 		pResult[1] = y[0]; pResult[5] = y[1]; pResult[9] = y[2];
 		pResult[2] = z[0]; pResult[6] = z[1]; pResult[10] = z[2];
 	}
 
-	inline void Mat44Scale3x3(Mat44& pResult, const Real scale) {
+	inline void Mat44Scale3x3(Real *const pResult, const Real scale) {
 		pResult[0] *= scale; pResult[1] *= scale; pResult[2 ] *= scale;
 		pResult[4] *= scale; pResult[5] *= scale; pResult[6 ] *= scale;
 		pResult[8] *= scale; pResult[9] *= scale; pResult[10] *= scale;
 	}
 
-	inline void Mat44Transpose3x3(Mat44& pResult)			{ 
+	inline void Mat44Transpose3x3(Real *const pResult)			{ 
 		Real temp = pResult[1]; pResult[1] = pResult[4]; pResult[4] = temp;
 		temp = pResult[2]; pResult[2] = pResult[8]; pResult[8] = temp;
 		temp = pResult[6]; pResult[6] = pResult[9]; pResult[9] = temp;
 	}
 
-	inline	void Mat44Transform3x3(Vec3f& pResult, const Mat44& pMatrix, const Vec3f a) {
+	inline	void Mat44Transform3x3(Real *const pResult, Real const*const pMatrix, const Vec3f a) {
 		Vec3f temp;																			// a may be pResult, so copy it
 		Vec3fSet(temp, a);
 		pResult[0] = temp[0] * pMatrix[0] + temp[1] * pMatrix[4] + temp[2] * pMatrix[8];
@@ -250,15 +250,15 @@ namespace PMath {
 		pResult[2] = temp[0] * pMatrix[2] + temp[1] * pMatrix[6] + temp[2] * pMatrix[10];
 	}
 
-	inline	void Mat44Transform(Vec3f& pResult, const Mat44& pMatrix, const Vec3f a) {
+	inline	void Mat44Transform(Real *const pResult, Real const*const pMatrix, const Vec3f a) {
 		Vec3f temp;																			// a may be pResult, so copy it
 		Vec3fSet(temp, a);
 		pResult[0] = temp[0] * pMatrix[0] + temp[1] * pMatrix[4] + temp[2] * pMatrix[8]  + pMatrix[12];
 		pResult[1] = temp[0] * pMatrix[1] + temp[1] * pMatrix[5] + temp[2] * pMatrix[9]  + pMatrix[13];
 		pResult[2] = temp[0] * pMatrix[2] + temp[1] * pMatrix[6] + temp[2] * pMatrix[10] + pMatrix[14];
 	}
-			void Mat44SetRotateVectorToVector (Mat44& result, const Vec3f theop, const Vec3f theoq);			void Mat44Rotate(Mat44& result, const Mat44 src, const Vec3f args);
-			void Mat44TrackBall(Mat44& result, const Vec3f p, const Vec3f q, const Vec3f cueCenter, Real cueRadius);
+			void Mat44SetRotateVectorToVector (Real *const pResult, const Vec3f theop, const Vec3f theoq);			void Mat44Rotate(Real *const pResult, Real const*const pMatrix, const Vec3f args);
+			void Mat44TrackBall(Real *const pResult, const Vec3f p, const Vec3f q, const Vec3f cueCenter, Real cueRadius);
 
 /* mat44 multiply
 			for( i = 0; i < 4; i++ )			{				for( j = 0; j < 4; j++ )				{					tmp = kZero;					for( k = 0; k < 4; k++ )					{						//tmp += mat1[i][k] * mat2[k][j];						tmp += mat1.m_Array[i*4 + k] * mat2.m_Array[k*4 + j];					}					result.m_Array[i*4 + j] = tmp;				}			}*/

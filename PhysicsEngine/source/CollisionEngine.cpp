@@ -81,7 +81,7 @@ bool Collide_InfPlane_InfPlane(Contact* pContact, RigidBody* pBodyA, RigidBody* 
 
 	// if neither body can move return true if they are not parallel
 	if (!(pBodyA->GetTranslatable() & pBodyA->GetSpinnable() & pBodyB->GetTranslatable() & pBodyB->GetSpinnable())) {
-		collided = !Equal(pBodyA->m_Extent, pBodyB->m_Extent, kEps);
+		collided = !Vec3fEqual(pBodyA->m_Extent, pBodyB->m_Extent, kEps);
 	}
 	else {
 		// if either can move, we must assume that the chance that they have not collided is exceedingly small
@@ -97,8 +97,8 @@ bool Collide_InfPlane_Sphere(Contact* pContact, RigidBody* pPlaneBody, RigidBody
 	PMath::Plane* pPlane = &((Physics::Plane*) pPlaneBody->m_pCollideGeo)->m_Plane;
 
 	Vec3f c0, c1;
-	PMath::Set(c0, pSphere->m_StateT0.m_Position);
-	PMath::Set(c1, pSphere->m_StateT1.m_Position);
+	PMath::Vec3fSet(c0, pSphere->m_StateT0.m_Position);
+	PMath::Vec3fSet(c1, pSphere->m_StateT1.m_Position);
 	Real d0 = pPlane->DistanceToPoint(c0);
 	Real d1 = pPlane->DistanceToPoint(c1);
 	Real radius = ((Physics::Sphere*) pSphere->m_pCollideGeo)->m_Radius;
@@ -106,16 +106,16 @@ bool Collide_InfPlane_Sphere(Contact* pContact, RigidBody* pPlaneBody, RigidBody
 	bool retval = false;
 
 	if (PMath::Abs(d0) <= radius) {
-		Set(pContact->m_Normal, pPlane->m_Normal);
+		Vec3fSet(pContact->m_Normal, pPlane->m_Normal);
 		pContact->m_ContactTime = k0;
 		retval = true;							// not supposed to get here; this engine never allows intersected positions
 	}
 	else if (d0 > radius && d1 < radius) {		// if penetrated this frame
-		Set(pContact->m_Normal, pPlane->m_Normal);
+		Vec3fSet(pContact->m_Normal, pPlane->m_Normal);
 		Real u = (d0 - radius) / (d0 - d1);		// normalized time of first contact
-		Scale(c1, u);
-		Scale(c0, k1 - u);
-		Add(pContact->m_Position, c0, c1);		// calc center of sphere at point of first contact
+		Vec3fScale(c1, u);
+		Vec3fScale(c0, k1 - u);
+		Vec3fAdd(pContact->m_Position, c0, c1);		// calc center of sphere at point of first contact
 		retval = true;
 		pContact->m_ContactTime = u;
 	}
@@ -153,17 +153,17 @@ bool Collide_Sphere___Sphere(Contact* pContact, RigidBody* pBodyA, RigidBody* pB
 	Real	radiusA = ((Physics::Sphere*) pBodyA->m_pCollideGeo)->m_Radius;
 	Real	radiusB = ((Physics::Sphere*) pBodyB->m_pCollideGeo)->m_Radius;
 	Vec3f va;
-			Subtract(va, pBodyA->m_StateT1.m_Position, pBodyA->m_StateT0.m_Position);
+			Vec3fSubtract(va, pBodyA->m_StateT1.m_Position, pBodyA->m_StateT0.m_Position);
 	Vec3f vb;
-			Subtract(vb, pBodyB->m_StateT1.m_Position, pBodyB->m_StateT0.m_Position);
+			Vec3fSubtract(vb, pBodyB->m_StateT1.m_Position, pBodyB->m_StateT0.m_Position);
 	Vec3f vab;
-			Subtract(vab, vb, va);
+			Vec3fSubtract(vab, vb, va);
 	Vec3f ab;
-			Subtract(ab, pBodyB->m_StateT0.m_Position, pBodyA->m_StateT0.m_Position);
+			Vec3fSubtract(ab, pBodyB->m_StateT0.m_Position, pBodyA->m_StateT0.m_Position);
 	Real	rab = radiusA + radiusB;
-	Real	a = Dot(vab, vab);				// u*u coefficient
-	Real	b = k2 * Dot(vab, ab);			// u coefficient
-	Real	c = Dot(ab, ab) - rab * rab;	// constant term
+	Real	a = Vec3fDot(vab, vab);				// u*u coefficient
+	Real	b = k2 * Vec3fDot(vab, ab);				// u coefficient
+	Real	c = Vec3fDot(ab, ab) - rab * rab;	// constant term
 
 	// check if they are overlapping
 	if (c <= k0) {
@@ -192,8 +192,8 @@ bool Collide_Sphere___Sphere(Contact* pContact, RigidBody* pBodyA, RigidBody* pB
 	}
 
 	if (retval) {
-		Subtract(pContact->m_Normal, pBodyA->m_StateT1.m_Position, pBodyB->m_StateT1.m_Position);
-		Normalize(pContact->m_Normal, pContact->m_Normal);
+		Vec3fSubtract(pContact->m_Normal, pBodyA->m_StateT1.m_Position, pBodyB->m_StateT1.m_Position);
+		Vec3fNormalize(pContact->m_Normal, pContact->m_Normal);
 	}
 
 	return retval;
@@ -267,19 +267,19 @@ void _ResolveSphereVsPlane(Contact* pContact)
 	// calculate point of contact on sphere
 	Vec3f contact;
 	Physics::Sphere* pCSphere = (Physics::Sphere*) pSphere->m_pCollideGeo;
-	SetScaled(contact, -pCSphere->m_Radius, pContact->m_Normal);
+	Vec3fSetScaled(contact, -pCSphere->m_Radius, pContact->m_Normal);
 	
 	Vec3f velocityA;
-	Set(velocityA, pSphere->m_StateT1.m_Velocity);
+	Vec3fSet(velocityA, pSphere->m_StateT1.m_Velocity);
 
 	// if object can spin, calculate velocity of the contact point
 	if (pSphere->GetSpinnable()) {
-		Cross(temp, pSphere->m_StateT1.m_AngularVelocity, contact);
-		Add(velocityA, temp);
+		Vec3fCross(temp, pSphere->m_StateT1.m_AngularVelocity, contact);
+		Vec3fAdd(velocityA, temp);
 	}
 	
 	// velocity is the direction of the collision normal (v dot n)
-	Real velNormalComponent = Dot(velocityA, pContact->m_Normal);
+	Real velNormalComponent = Vec3fDot(velocityA, pContact->m_Normal);
 
 	// make sure velocity is towards static object (negative)
 	if (velNormalComponent < k0) {
@@ -294,33 +294,33 @@ void _ResolveSphereVsPlane(Contact* pContact)
 		#define RESTITUTION Real(0.60f)
 		Real impulseNumerator = -(k1 + RESTITUTION) * velNormalComponent;
 
-		Cross(temp, contact, pContact->m_Normal);
+		Vec3fCross(temp, contact, pContact->m_Normal);
 		
 		if (pSphere->GetInertialKind() == Physics::kI_Sphere) {
-			Scale(temp, pSphere->m_InertiaITD[0]);
+			Vec3fScale(temp, pSphere->m_InertiaITD[0]);
 		}
 		else {
-			Multiply(temp, temp, pSphere->m_InertiaITD);
+			Vec3fMultiply(temp, temp, pSphere->m_InertiaITD);
 		}
 
 		Vec3f temp2;
-		Cross(temp2, temp, contact);
+		Vec3fCross(temp2, temp, contact);
 		
 		// changing impulseDenominator and result to double will make the equations work for objects down to a mass of 0.1
 		// with Real, the equations work down to mass of 0.2. 
 
-		Real impulseDenominator = pSphere->GetOOMass() + Dot(temp2, pContact->m_Normal);
+		Real impulseDenominator = pSphere->GetOOMass() + Vec3fDot(temp2, pContact->m_Normal);
 		
 		// final velocity = initial velocity + (impulse / mass) * normal
 		Vec3f impulse;
 		Real result = (pSphere->GetOOMass() * impulseNumerator) / impulseDenominator;
-		SetScaled(impulse, (Real) result, pContact->m_Normal);
-		Add(pSphere->m_StateT1.m_Velocity, impulse);
+		Vec3fSetScaled(impulse, (Real) result, pContact->m_Normal);
+		Vec3fAdd(pSphere->m_StateT1.m_Velocity, impulse);
 		
 		// calculate angular impulse
 		// final angular momentum = init ang vel + (collision point DOT impulse * normal) / inertia tensor
-		Cross(temp2, pContact->m_Normal, impulse);
-		Add(pSphere->m_StateT1.m_AngularMomentum, temp2);
+		Vec3fCross(temp2, pContact->m_Normal, impulse);
+		Vec3fAdd(pSphere->m_StateT1.m_AngularMomentum, temp2);
 
 		// angular velocity will be recalculate on next time step
 	}
@@ -334,17 +334,17 @@ void Resolve_InfPlane_Sphere(Contact* pContact)
 	RigidBody* pPlaneBody = pContact->m_pBodyA;
 	RigidBody* pSphere = pContact->m_pBodyB;
 	Vec3f adjust;
-	PMath::Set(adjust, pSphere->m_StateT1.m_Position);
-	PMath::Subtract(adjust, pContact->m_Position);					// this is the motion removed from the object
-	Real residual = PMath::Length(adjust);							// left over motion
+	PMath::Vec3fSet(adjust, pSphere->m_StateT1.m_Position);
+	PMath::Vec3fSubtract(adjust, pContact->m_Position);					// this is the motion removed from the object
+	Real residual = PMath::Vec3fLength(adjust);							// left over motion
 
-	PMath::Set(pSphere->m_StateT1.m_Position, pContact->m_Position);	// move sphere out of trouble
+	PMath::Vec3fSet(pSphere->m_StateT1.m_Position, pContact->m_Position);	// move sphere out of trouble
 
 	_ResolveSphereVsPlane(pContact);
 
-	PMath::Set(adjust, pSphere->m_StateT1.m_Velocity);
-	PMath::Normalize(adjust, adjust);
-	PMath::MultiplyAccumulate(pSphere->m_StateT1.m_Position, residual, adjust);		// add residual motion along the new velocity vector
+	PMath::Vec3fSet(adjust, pSphere->m_StateT1.m_Velocity);
+	PMath::Vec3fNormalize(adjust, adjust);
+	PMath::Vec3fMultiplyAccumulate(pSphere->m_StateT1.m_Position, residual, adjust);		// Vec3fAdd residual motion along the new velocity vector
 }
 
 void Resolve_Sphere___InfPlane(Contact* pContact)
@@ -352,7 +352,7 @@ void Resolve_Sphere___InfPlane(Contact* pContact)
 	RigidBody* pTemp = pContact->m_pBodyA;
 	pContact->m_pBodyA = pContact->m_pBodyB;
 	pContact->m_pBodyB = pTemp;
-	Negate(pContact->m_Normal);
+	Vec3fNegate(pContact->m_Normal);
 
 	Resolve_InfPlane_Sphere(pContact);					/// @todo swap!!!
 }
@@ -366,28 +366,28 @@ void Resolve_Sphere___Sphere(Contact* pContact)
 	Vec3f contactA,	contactB;
 	Vec3f velocityA,	velocityB, velocityAB;
 
-	// calculate point of contact on body A and add in angular contribution
+	// calculate point of contact on body A and Vec3fAdd in angular contribution
 	Physics::Sphere* pCSphereA = (Physics::Sphere*) pBodyA->m_pCollideGeo;
 	Physics::Sphere* pCSphereB = (Physics::Sphere*) pBodyB->m_pCollideGeo;
 
-	SetScaled(contactA, -pCSphereA->m_Radius, pContact->m_Normal);
-	SetScaled(contactB,  pCSphereB->m_Radius, pContact->m_Normal);
-	Set      (velocityA, pBodyA->m_StateT1.m_Velocity);
-	Set      (velocityB, pBodyB->m_StateT1.m_Velocity);
+	Vec3fSetScaled(contactA, -pCSphereA->m_Radius, pContact->m_Normal);
+	Vec3fSetScaled(contactB,  pCSphereB->m_Radius, pContact->m_Normal);
+	Vec3fSet      (velocityA, pBodyA->m_StateT1.m_Velocity);
+	Vec3fSet      (velocityB, pBodyB->m_StateT1.m_Velocity);
 
-	// add tangential velocity at collision point if the body can spin
+	// Vec3fAdd tangential velocity at collision point if the body can spin
 	if (pBodyA->GetSpinnable()) {
-		Cross(temp, pBodyA->m_StateT0.m_AngularVelocity, contactA);
-		Add(velocityA, temp);
+		Vec3fCross(temp, pBodyA->m_StateT0.m_AngularVelocity, contactA);
+		Vec3fAdd(velocityA, temp);
 	}
 
 	if (pBodyB->GetSpinnable()) {
-		Cross(temp, pBodyB->m_StateT0.m_AngularVelocity, contactB);
-		Add(velocityB, temp);
+		Vec3fCross(temp, pBodyB->m_StateT0.m_AngularVelocity, contactB);
+		Vec3fAdd(velocityB, temp);
 	}
 
-	Subtract(velocityAB, velocityA, velocityB);							// calculate relative velocity
-	Real velNormalComponent = Dot(velocityAB, pContact->m_Normal);		// get velocity component along collision normal
+	Vec3fSubtract(velocityAB, velocityA, velocityB);							// calculate relative velocity
+	Real velNormalComponent = Vec3fDot(velocityAB, pContact->m_Normal);		// get velocity component along collision normal
 
 	if (velNormalComponent < k0) {	// only accept if the two objects are moving towards each other
 		// impulses change velocities directly without waiting for integration
@@ -400,46 +400,46 @@ void Resolve_Sphere___Sphere(Contact* pContact)
 		#define RESTITUTION Real(0.80f)
 		Real impulseNumerator = -(k1 + RESTITUTION) * velNormalComponent;
 
-		Cross(temp, contactA, pContact->m_Normal);
+		Vec3fCross(temp, contactA, pContact->m_Normal);
 		
 		if (pBodyA->GetInertialKind() == Physics::kI_Sphere) {
-			Scale(temp, pBodyA->m_InertiaITD[0]);
+			Vec3fScale(temp, pBodyA->m_InertiaITD[0]);
 		}
 		else {
-			Multiply(temp, temp, pBodyA->m_InertiaITD);
+			Vec3fMultiply(temp, temp, pBodyA->m_InertiaITD);
 		}
 
-		Cross(temp2, temp, contactA);
+		Vec3fCross(temp2, temp, contactA);
 		
-		Real impulseDenominator = pBodyA->GetOOMass() + Dot(temp2, pContact->m_Normal) + pBodyB->GetOOMass();
+		Real impulseDenominator = pBodyA->GetOOMass() + Vec3fDot(temp2, pContact->m_Normal) + pBodyB->GetOOMass();
 		
 		if (pBodyB->GetInertialKind() == Physics::kI_Sphere) {
-			Scale(temp, pBodyB->m_InertiaITD[0]);
+			Vec3fScale(temp, pBodyB->m_InertiaITD[0]);
 		}
 		else {
-			Multiply(temp, temp, pBodyB->m_InertiaITD);
+			Vec3fMultiply(temp, temp, pBodyB->m_InertiaITD);
 		}
 
-		Cross(temp2, temp, contactB);
-		impulseDenominator += Dot(temp2, pContact->m_Normal);
+		Vec3fCross(temp2, temp, contactB);
+		impulseDenominator += Vec3fDot(temp2, pContact->m_Normal);
 		
 		// final velocity = initial velocity + (impulse / mass) * normal
 		Vec3f impulse;
 		Real result = (pBodyA->GetOOMass() * impulseNumerator) / impulseDenominator;
-		SetScaled(impulse, (Real) result, pContact->m_Normal);
-		Add(pBodyA->m_StateT1.m_Velocity, impulse);
+		Vec3fSetScaled(impulse, (Real) result, pContact->m_Normal);
+		Vec3fAdd(pBodyA->m_StateT1.m_Velocity, impulse);
 		
 		// apply opposite impulse to body B
 		Vec3f negImpulse;
-		SetScaled(negImpulse, kN1 * pBodyB->GetOOMass(), impulse);
-		Add(pBodyB->m_StateT1.m_Velocity, negImpulse);
+		Vec3fSetScaled(negImpulse, kN1 * pBodyB->GetOOMass(), impulse);
+		Vec3fAdd(pBodyB->m_StateT1.m_Velocity, negImpulse);
 
 		// calculate angular impulse
 		// final angular momentum = init ang vel + (collision point DOT impulse * normal) / inertia tensor
-		Cross(temp2, pContact->m_Normal, impulse);
-		Add(pBodyA->m_StateT1.m_AngularMomentum, temp2);
-		Scale(temp2, kN1);
-		Add(pBodyB->m_StateT1.m_AngularMomentum, temp2);
+		Vec3fCross(temp2, pContact->m_Normal, impulse);
+		Vec3fAdd(pBodyA->m_StateT1.m_AngularMomentum, temp2);
+		Vec3fScale(temp2, kN1);
+		Vec3fAdd(pBodyB->m_StateT1.m_AngularMomentum, temp2);
 
 		// angular velocity will be recalculated on next time step
 	}

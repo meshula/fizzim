@@ -78,7 +78,7 @@ void RigidBody::SetDefaults()
 	m_StateT1 = m_StateT0;
 	m_Acc.Clear();
 	m_Collided = false;
-	Zero(m_AccelPrev);
+	Vec3fZero(m_AccelPrev);
 }
 
 //////////////////// sets/gets
@@ -227,14 +227,14 @@ bool RigidBody::ResetForNextTimeStep()
 			// much more interesting friction is anisotropic; for example, a tire has much more transverse than lateral friction
 			// coulomb friction - a force opposing motion
 
-			Real vel = Length(m_StateT0.m_Velocity);
-			MultiplyAccumulate(m_Acc.m_Force, Real(-0.95f) * vel, m_StateT0.m_Velocity);
+			Real vel = Vec3fLength(m_StateT0.m_Velocity);
+			Vec3fMultiplyAccumulate(m_Acc.m_Force, Real(-0.95f) * vel, m_StateT0.m_Velocity);
 		}
 		else {
 			// linear velocity damping, use to simulate viscosity
-			Real forceSquared = Dot(m_Acc.m_Force, m_Acc.m_Force);
+			Real forceSquared = Vec3fDot(m_Acc.m_Force, m_Acc.m_Force);
 			if (forceSquared < kEps) {
-				Scale(m_StateT0.m_Velocity, m_LinearVelocityDamp);
+				Vec3fScale(m_StateT0.m_Velocity, m_LinearVelocityDamp);
 			}
 		}
 
@@ -245,7 +245,7 @@ bool RigidBody::ResetForNextTimeStep()
 
 	if (m_Spinnable) {
 		Real aDamp = -m_Mass * m_AngularVelocityDamp;
-		SetScaled(m_Acc.m_Torque, aDamp, m_StateT0.m_AngularVelocity);	// input a torque opposing the angular velocity
+		Vec3fSetScaled(m_Acc.m_Torque, aDamp, m_StateT0.m_AngularVelocity);	// input a torque opposing the angular velocity
 	}
 
 	m_Collided = false;
@@ -258,27 +258,27 @@ void RigidBody::Integrate1(Real dt, Vec3f gravity)
 {
 	// if the body's position can change:
 	if (m_Translatable) {
-		MultiplyAccumulate(m_StateT1.m_Velocity, dt * kHalf,		m_AccelPrev);					// v += 1/2 a * t
-		MultiplyAccumulate(m_StateT1.m_Position, dt,				m_StateT1.m_Velocity);			// pos += v * dt
-		MultiplyAccumulate(m_StateT1.m_Position, kHalf * dt * dt,	m_AccelPrev);					// pos += 1/2 a * t * t
+		Vec3fMultiplyAccumulate(m_StateT1.m_Velocity, dt * kHalf,		m_AccelPrev);					// v += 1/2 a * t
+		Vec3fMultiplyAccumulate(m_StateT1.m_Position, dt,				m_StateT1.m_Velocity);			// pos += v * dt
+		Vec3fMultiplyAccumulate(m_StateT1.m_Position, kHalf * dt * dt,	m_AccelPrev);					// pos += 1/2 a * t * t
 	}
 
 	// if the body can spin:			
 	if (m_Spinnable) {		
-		MultiplyAccumulate(m_StateT1.m_AngularMomentum, dt * kHalf, m_TorquePrev);					// L += 1/2 T * t
+		Vec3fMultiplyAccumulate(m_StateT1.m_AngularMomentum, dt * kHalf, m_TorquePrev);					// L += 1/2 T * t
 																									// update angular velocity from momentum
 		if (m_InertialKind == Physics::kI_Sphere) {													// spheres are common enough to treat specially
-			SetScaled(m_StateT1.m_AngularVelocity, m_InertiaITD[0], m_StateT1.m_AngularMomentum);
+			Vec3fSetScaled(m_StateT1.m_AngularVelocity, m_InertiaITD[0], m_StateT1.m_AngularMomentum);
 		}
 		else {	// must use the inertia tensor diagonal instead
 			// note, since the tensor is diagonal, world space and local space tensor is the same, so this works.
-			Multiply(m_StateT1.m_AngularVelocity, m_InertiaITD, m_StateT1.m_AngularMomentum);
+			Vec3fMultiply(m_StateT1.m_AngularVelocity, m_InertiaITD, m_StateT1.m_AngularMomentum);
 		}
 		//else { 
 		/// @todo if using full matrix for tensor, must do worldTensor = orientation * inverseinertiatensor * transpose(orientation) before multiplying
 		//} 
 
-		InputAngularVelocity(m_StateT1.m_Orientation, dt, m_StateT1.m_AngularVelocity);				// R += t * angular velocity
+		QuatInputAngularVelocity(m_StateT1.m_Orientation, dt, m_StateT1.m_AngularVelocity);				// R += t * angular velocity
 	}
 }
 
@@ -287,20 +287,20 @@ void RigidBody::Integrate2(Real dt, Vec3f gravity)
 {
 	// if the body's position can change:
 	if (m_Translatable) {
-		SetScaled(m_AccelPrev, m_OOMass, m_Acc.m_Force);									// dvdt = f / m     works for gravity? yes:  f = mg    a = mg / m = g
+		Vec3fSetScaled(m_AccelPrev, m_OOMass, m_Acc.m_Force);									// dvdt = f / m     works for gravity? yes:  f = mg    a = mg / m = g
 		if (m_Gravity) {
-			Add(m_AccelPrev, gravity);
+			Vec3fAdd(m_AccelPrev, gravity);
 		}
 
-		MultiplyAccumulate(m_StateT1.m_Velocity, dt * kHalf, m_AccelPrev);					// v += 1/2 a * t
-		Zero(m_Acc.m_Force);																// clear out the force accumulator
+		Vec3fMultiplyAccumulate(m_StateT1.m_Velocity, dt * kHalf, m_AccelPrev);					// v += 1/2 a * t
+		Vec3fZero(m_Acc.m_Force);																// clear out the force accumulator
 	}
 
 	// if the body can spin:
 	if (m_Spinnable) {
-		Set(m_TorquePrev, m_Acc.m_Torque);
-		MultiplyAccumulate(m_StateT1.m_AngularMomentum, dt * kHalf, m_Acc.m_Torque);				// L += 1/2 T * t
+		Vec3fSet(m_TorquePrev, m_Acc.m_Torque);
+		Vec3fMultiplyAccumulate(m_StateT1.m_AngularMomentum, dt * kHalf, m_Acc.m_Torque);				// L += 1/2 T * t
 
-		Zero(m_Acc.m_Torque);																		// clear the torque accumulator
+		Vec3fZero(m_Acc.m_Torque);																		// clear the torque accumulator
 	}
 }

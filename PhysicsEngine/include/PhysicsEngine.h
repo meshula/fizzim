@@ -114,7 +114,7 @@ namespace Physics {
 		/// remove a spring from the system
 		bool	RemoveSpring(uint32 id);
 
-		enum ESpringBool	{ propSpringCompressible };	// if true, the spring will push if compressed, and pull if stretched. If false it will only pull if stretched.
+		enum ESpringBool	{ propResistCompression };	// if true, the spring will push if compressed, and pull if stretched. If false it will only pull if stretched.
 		enum ESpringScalar	{ propSpringStiffness, propSpringDamping, propSpringRestLength };
 		enum ESpringVector	{ propAttachPointA, propAttachPointB };
 		enum ESpringUint32	{ propBodyA, propBodyB };

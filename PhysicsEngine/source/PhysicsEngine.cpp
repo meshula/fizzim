@@ -80,31 +80,31 @@ static uint32 UniqueID()
 
 #define BOOLSTRING(a) ((a==true) ? "true" : "false")
 
-static char* BOOLPROPSTRING(Physics::Engine::ERigidBodyBool prop) {
+static char* BOOLPROPSTRING(Physics::Engine :: ERigidBodyBool prop) {
 	switch (prop) {
-	case Physics::Engine::propActive:				return "propActive";
-	case Physics::Engine::propUseGravity:			return "propUseGravity";
-	case Physics::Engine::propCollidable:			return "propCollidable";
-	case Physics::Engine::propSpinnable:				return "propSpinnable";
-	case Physics::Engine::propTranslatable:			return "propTranslatable";
+	case Physics::Engine :: propActive:				return "propActive";
+	case Physics::Engine :: propUseGravity:			return "propUseGravity";
+	case Physics::Engine :: propCollidable:			return "propCollidable";
+	case Physics::Engine :: propSpinnable:				return "propSpinnable";
+	case Physics::Engine :: propTranslatable:			return "propTranslatable";
 	}
 	return "unknown";
 }
 
-static char* SCALARPROPSTRING(Physics::Engine::ERigidBodyScalar prop) {
+static char* SCALARPROPSTRING(Physics::Engine :: ERigidBodyScalar prop) {
 	switch (prop) {
-	case Physics::Engine::propAngularVelocityDamp:	return "propAngularVelocityDamp";
-	case Physics::Engine::propLinearVelocityDamp:	return "propLinearVelocityDamp";
-	case Physics::Engine::propMass:					return "propMass";
+	case Physics::Engine :: propAngularVelocityDamp:	return "propAngularVelocityDamp";
+	case Physics::Engine :: propLinearVelocityDamp:	return "propLinearVelocityDamp";
+	case Physics::Engine :: propMass:					return "propMass";
 	}
 	return "unknown";
 }
 
-static char* Vec3fPROPSTRING(Physics::Engine::ERigidBodyVector prop) {
+static char* Vec3fPROPSTRING(Physics::Engine :: ERigidBodyVector prop) {
 	switch (prop) {
-	case Physics::Engine::propExtent:				return "propExtent";
-	case Physics::Engine::propPosition:				return "propPosition";
-	case Physics::Engine::propVelocity:				return "propVelocity";
+	case Physics::Engine :: propExtent:				return "propExtent";
+	case Physics::Engine :: propPosition:				return "propPosition";
+	case Physics::Engine :: propVelocity:				return "propVelocity";
 	}
 	return "unknown";
 }
@@ -135,7 +135,7 @@ namespace Physics {
 	};
 }
 
-Physics::Engine::Engine()
+Physics::Engine :: Engine()
 {
 	m_pAux = new PEAux();
 
@@ -145,7 +145,7 @@ Physics::Engine::Engine()
 	//--------------------------------------------------------------
 }
 
-Physics::Engine::~Engine()
+Physics::Engine :: ~Engine()
 {
 	delete m_pAux;
 	m_pAux = 0;
@@ -156,16 +156,16 @@ Physics::Engine::~Engine()
 	//--------------------------------------------------------------
 }
 
-void Physics::Engine::SetGravity(PMath::Vec3f val)
+void Physics::Engine :: SetGravity(PMath::Vec3f val)
 {
-	Set(m_pAux->m_Gravity, val);
+	Vec3fSet(m_pAux->m_Gravity, val);
 
 	//--------------------------------------------------------------
 	APILOG("SetGravity(%f, %f, %f);\n", val[0], val[1], val[2]);
 	//--------------------------------------------------------------
 }
 
-void Physics::Engine::SetCollisionCallback(ICallback* pCB)
+void Physics::Engine :: SetCollisionCallback(ICallback* pCB)
 {
 	m_pAux->m_pCollisionCallback = pCB;
 
@@ -174,7 +174,7 @@ void Physics::Engine::SetCollisionCallback(ICallback* pCB)
 	//--------------------------------------------------------------
 }
 
-uint32 Physics::Engine::AddRigidBodySphere(Real radius)
+uint32 Physics::Engine :: AddRigidBodySphere(Real radius)
 {
 	uint32 id				= UniqueID();
 	RigidBody* pBody		= new RigidBody();
@@ -192,7 +192,7 @@ uint32 Physics::Engine::AddRigidBodySphere(Real radius)
 	return id;
 }
 
-uint32 Physics::Engine::AddRigidBodyPlane(PMath::Plane& plane)
+uint32 Physics::Engine :: AddRigidBodyPlane(PMath::Plane& plane)
 {
 	uint32 id				= UniqueID();
 	RigidBody* pBody		= new RigidBody();
@@ -212,7 +212,7 @@ uint32 Physics::Engine::AddRigidBodyPlane(PMath::Plane& plane)
 	return id;
 }
 		
-uint32	Phyics::Engine::AddSpringMesh()
+uint32	Physics::Engine :: AddSpringMesh()
 {
 	uint32 id				= UniqueID();
 	SpringMesh* pBody		= new SpringMesh();
@@ -220,6 +220,8 @@ uint32	Phyics::Engine::AddSpringMesh()
 
 	pBody->SetSpinnable(false);
 	pBody->SetTranslatable(false);
+
+	return id;
 }
 
 
@@ -227,7 +229,7 @@ uint32	Phyics::Engine::AddSpringMesh()
 	Before removing a rigid body, any springs that it is attached to must also bite the dust
  */
 
-bool Physics::Engine::RemoveRigidBody(uint32 id)
+bool Physics::Engine :: RemoveRigidBody(uint32 id)
 {
 	bool retval = false;
 
@@ -257,7 +259,7 @@ bool Physics::Engine::RemoveRigidBody(uint32 id)
 	return retval;
 }
 
-void Physics::Engine::RemoveAll()
+void Physics::Engine :: RemoveAll()
 {
 	Physics::RigidBodyMap::iterator rbIter;
 	Physics::SpringMap::iterator	springIter;
@@ -275,7 +277,7 @@ void Physics::Engine::RemoveAll()
 	m_pAux->m_Springs.clear();
 }
 
-uint32 Physics::Engine::AddSpring()
+uint32 Physics::Engine :: AddSpring()
 {
 	uint32 id = UniqueID();
 	Spring* pSpring = new Spring();
@@ -288,7 +290,7 @@ uint32 Physics::Engine::AddSpring()
 	return id;
 }
 
-bool Physics::Engine::RemoveSpring(uint32 id)
+bool Physics::Engine :: RemoveSpring(uint32 id)
 {
 	bool retval = false;
 	if (m_pAux->m_Springs.count(id) != 0) {
@@ -306,7 +308,7 @@ bool Physics::Engine::RemoveSpring(uint32 id)
 }
 
 
-void Physics::Engine::SetRigidBodyBool(uint32 id, ERigidBodyBool prop, bool value)
+void Physics::Engine :: SetRigidBodyBool(uint32 id, ERigidBodyBool prop, bool value)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
@@ -324,7 +326,7 @@ void Physics::Engine::SetRigidBodyBool(uint32 id, ERigidBodyBool prop, bool valu
 	//--------------------------------------------------------------
 }
 
-bool Physics::Engine::GetRigidBodyBool(uint32 id, ERigidBodyBool prop)
+bool Physics::Engine :: GetRigidBodyBool(uint32 id, ERigidBodyBool prop)
 {
 	bool retval = false;
 	if (m_pAux->m_Bodies.count(id) != 0) {
@@ -341,7 +343,7 @@ bool Physics::Engine::GetRigidBodyBool(uint32 id, ERigidBodyBool prop)
 }
 
 
-void Physics::Engine::SetRigidBodyScalar(uint32 id, ERigidBodyScalar prop, Real value)
+void Physics::Engine :: SetRigidBodyScalar(uint32 id, ERigidBodyScalar prop, Real value)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
@@ -362,7 +364,7 @@ void Physics::Engine::SetRigidBodyScalar(uint32 id, ERigidBodyScalar prop, Real 
 	//--------------------------------------------------------------
 }
 
-Real Physics::Engine::GetRigidBodyScalar(uint32 id, ERigidBodyScalar prop)
+Real Physics::Engine :: GetRigidBodyScalar(uint32 id, ERigidBodyScalar prop)
 {
 	Real retval = k0;
 	if (m_pAux->m_Bodies.count(id) != 0) {
@@ -376,13 +378,13 @@ Real Physics::Engine::GetRigidBodyScalar(uint32 id, ERigidBodyScalar prop)
 	return retval;
 }
 
-void Physics::Engine::SetRigidBodyVec3f(uint32 id, ERigidBodyVector prop, Vec3f value)
+void Physics::Engine :: SetRigidBodyVec3f(uint32 id, ERigidBodyVector prop, Vec3f value)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
 		switch (prop) {
 		case propExtent:
-			Set(pBody->m_Extent, value);
+			Vec3fSet(pBody->m_Extent, value);
 			if (pBody->GetInertialKind() == kI_Sphere) {
 				GraphObj::Sphere* pSphere = (GraphObj::Sphere*) pBody->m_pRender;
 				pSphere->m_Radius = value[0] * kHalf;
@@ -391,8 +393,8 @@ void Physics::Engine::SetRigidBodyVec3f(uint32 id, ERigidBodyVector prop, Vec3f 
 			}
 			break;
 
-		case propPosition:				Set(pBody->m_StateT1.m_Position, value);	break;
-		case propVelocity:				Set(pBody->m_StateT1.m_Velocity, value);	break;
+		case propPosition:				Vec3fSet(pBody->m_StateT1.m_Position, value);	break;
+		case propVelocity:				Vec3fSet(pBody->m_StateT1.m_Velocity, value);	break;
 		}
 	}
 
@@ -403,7 +405,7 @@ void Physics::Engine::SetRigidBodyVec3f(uint32 id, ERigidBodyVector prop, Vec3f 
 
 static Vec3f vdummy = { k0, k0, k0 };
 
-Vec3f* Physics::Engine::GetRigidBodyVec3fPtr(uint32 id, ERigidBodyVector prop)
+Vec3f* Physics::Engine :: GetRigidBodyVec3fPtr(uint32 id, ERigidBodyVector prop)
 {
 	Vec3f* retval = &vdummy;
 	if (m_pAux->m_Bodies.count(id) != 0) {
@@ -418,19 +420,19 @@ Vec3f* Physics::Engine::GetRigidBodyVec3fPtr(uint32 id, ERigidBodyVector prop)
 }
 
 
-void Physics::Engine::SetRigidBodyQuat(uint32 id, ERigidBodyQuat prop, Quaternion value)
+void Physics::Engine :: SetRigidBodyQuat(uint32 id, ERigidBodyQuat prop, Quaternion value)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
 		switch (prop) {
-		case propOrientation:			Set(pBody->m_StateT1.m_Orientation, value);	break;
+		case propOrientation:			QuatSet(pBody->m_StateT1.m_Orientation, value);	break;
 		}
 	}
 }
 
 static Quaternion qdummy = { k0, k0, k0, k1 };
 
-Quaternion* Physics::Engine::GetRigidBodyQuatPtr(uint32 id, ERigidBodyQuat prop)
+Quaternion* Physics::Engine :: GetRigidBodyQuatPtr(uint32 id, ERigidBodyQuat prop)
 {
 	Quaternion* retval = &qdummy;
 	if (m_pAux->m_Bodies.count(id) != 0) {
@@ -442,7 +444,7 @@ Quaternion* Physics::Engine::GetRigidBodyQuatPtr(uint32 id, ERigidBodyQuat prop)
 	return retval;
 }
 
-void Physics::Engine::GetRigidBodyTransformMatrix(uint32 id, Mat44& pResult)
+void Physics::Engine :: GetRigidBodyTransformMatrix(uint32 id, Mat44& pResult)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
@@ -451,35 +453,35 @@ void Physics::Engine::GetRigidBodyTransformMatrix(uint32 id, Mat44& pResult)
 			pResult[3] = k0; pResult[7] = k0; pResult[11] = k0; pResult[15] = k1;
 		}
 		else {
-			Identity(pResult);
+			Mat44Identity(pResult);
 		}
-		SetTranslation(pResult, pBody->m_StateT1.m_Position);
+		Mat44SetTranslation(pResult, pBody->m_StateT1.m_Position);
 	}
 }
 
-void Physics::Engine::SetSpringBool(uint32 id, ESpringBool prop, bool value)
+void Physics::Engine :: SetSpringBool(uint32 id, ESpringBool prop, bool value)
 {
 	if (m_pAux->m_Springs.count(id) != 0) {
 		Spring* pSpring = m_pAux->m_Springs[id];
-		if (prop == propSpringCompressible) {
-			pSpring->m_Compressible = value;
+		if (prop == propResistCompression) {
+			pSpring->m_ResistCompression = value;
 		}
 	}
 }
 
-bool Physics::Engine::GetSpringBool(uint32 id, ESpringBool prop)
+bool Physics::Engine :: GetSpringBool(uint32 id, ESpringBool prop)
 {
 	bool retval = false;
 	if (m_pAux->m_Springs.count(id) != 0) {
 		Spring* pSpring = m_pAux->m_Springs[id];
-		if (prop == propSpringCompressible) {
-			retval = pSpring->m_Compressible;
+		if (prop == propResistCompression) {
+			retval = pSpring->m_ResistCompression;
 		}
 	}
 	return retval;
 }
 
-void Physics::Engine::SetSpringUInt32(uint32 id, ESpringUint32 prop,	uint32 value)
+void Physics::Engine :: SetSpringUInt32(uint32 id, ESpringUint32 prop,	uint32 value)
 {
 	if (m_pAux->m_Springs.count(id) != 0) {
 		Spring* pSpring = m_pAux->m_Springs[id];
@@ -504,7 +506,7 @@ void Physics::Engine::SetSpringUInt32(uint32 id, ESpringUint32 prop,	uint32 valu
 	}
 }
 
-uint32 Physics::Engine::GetSpringUInt32(uint32 id, ESpringUint32 prop)
+uint32 Physics::Engine :: GetSpringUInt32(uint32 id, ESpringUint32 prop)
 {
 	int retval = 0;
 	if (m_pAux->m_Springs.count(id) != 0) {
@@ -519,7 +521,7 @@ uint32 Physics::Engine::GetSpringUInt32(uint32 id, ESpringUint32 prop)
 	return retval;
 }
 
-void Physics::Engine::SetSpringScalar(uint32 id, ESpringScalar prop,	Real value)
+void Physics::Engine :: SetSpringScalar(uint32 id, ESpringScalar prop,	Real value)
 {
 	if (m_pAux->m_Springs.count(id) != 0) {
 		Spring* pSpring = m_pAux->m_Springs[id];
@@ -543,7 +545,7 @@ void Physics::Engine::SetSpringScalar(uint32 id, ESpringScalar prop,	Real value)
 	}
 }
 
-Real Physics::Engine::GetSpringScalar(uint32 id, ESpringScalar prop)
+Real Physics::Engine :: GetSpringScalar(uint32 id, ESpringScalar prop)
 {
 	Real retval = k0;
 	if (m_pAux->m_Springs.count(id) != 0) {
@@ -557,22 +559,22 @@ Real Physics::Engine::GetSpringScalar(uint32 id, ESpringScalar prop)
 	return retval;
 }
 
-void Physics::Engine::SetSpringVec3f(uint32 id, ESpringVector prop,	PMath::Vec3f value)
+void Physics::Engine :: SetSpringVec3f(uint32 id, ESpringVector prop,	PMath::Vec3f value)
 {
 	if (m_pAux->m_Springs.count(id) != 0) {
 		Spring* pSpring = m_pAux->m_Springs[id];
 		if (prop == propAttachPointA) {
-			Set(pSpring->m_PosA, value);
-			pSpring->m_CenterAttachA = IsZero(value);
+			Vec3fSet(pSpring->m_PosA, value);
+			pSpring->m_CenterAttachA = Vec3fIsZero(value);
 		}
 		else if (prop == propAttachPointB) {
-			Set(pSpring->m_PosB, value);
-			pSpring->m_CenterAttachB = IsZero(value);
+			Vec3fSet(pSpring->m_PosB, value);
+			pSpring->m_CenterAttachB = Vec3fIsZero(value);
 		}
 	}
 }
 
-PMath::Vec3f* Physics::Engine::GetSpringVec3fPtr(uint32 id, ESpringVector prop)
+PMath::Vec3f* Physics::Engine :: GetSpringVec3fPtr(uint32 id, ESpringVector prop)
 {
 	PMath::Vec3f* retval = 0;
 	if (m_pAux->m_Springs.count(id) != 0) {
@@ -588,7 +590,7 @@ PMath::Vec3f* Physics::Engine::GetSpringVec3fPtr(uint32 id, ESpringVector prop)
 }
 
 
-void Physics::Engine::AddImpulse(uint32 id, Vec3f force)
+void Physics::Engine :: AddImpulse(uint32 id, Vec3f force)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
@@ -598,7 +600,7 @@ void Physics::Engine::AddImpulse(uint32 id, Vec3f force)
 	}
 }
 
-void Physics::Engine::AddTwist(uint32 id, Vec3f torque)
+void Physics::Engine :: AddTwist(uint32 id, Vec3f torque)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
@@ -608,36 +610,36 @@ void Physics::Engine::AddTwist(uint32 id, Vec3f torque)
 	}
 }
 
-void Physics::Engine::StopMoving(uint32 id)
+void Physics::Engine :: StopMoving(uint32 id)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
 		if (pBody->GetSpinnable()) {
-			Zero(pBody->m_Acc.m_Force);
-			Zero(pBody->m_StateT0.m_Velocity);
-			Zero(pBody->m_StateT1.m_Velocity);
+			Vec3fZero(pBody->m_Acc.m_Force);
+			Vec3fZero(pBody->m_StateT0.m_Velocity);
+			Vec3fZero(pBody->m_StateT1.m_Velocity);
 		}
 	}
 }
 
-void Physics::Engine::StopSpinning(uint32 id)
+void Physics::Engine :: StopSpinning(uint32 id)
 {
 	if (m_pAux->m_Bodies.count(id) != 0) {
 		RigidBody* pBody = m_pAux->m_Bodies[id];
 		if (pBody->GetSpinnable()) {
-			Zero(pBody->m_Acc.m_Torque);
-			Zero(pBody->m_StateT0.m_AngularVelocity);
-			Zero(pBody->m_StateT1.m_AngularVelocity);
+			Vec3fZero(pBody->m_Acc.m_Torque);
+			Vec3fZero(pBody->m_StateT0.m_AngularVelocity);
+			Vec3fZero(pBody->m_StateT1.m_AngularVelocity);
 		}
 	}
 }
 
-void Physics::Engine::SetMinTimeStep(Real dt)
+void Physics::Engine :: SetMinTimeStep(Real dt)
 {
 	m_pAux->m_MinTimeStep = dt;
 }
 
-void Physics::Engine::Simulate(Real dt)
+void Physics::Engine :: Simulate(Real dt)
 {
 	/// @todo calculate timestep for numerical stability
 	// if the framerate is less than 50Hz, subdivide the time step
@@ -696,12 +698,12 @@ void Physics::Engine::Simulate(Real dt)
 			Vec3f* pPosB = &pSpring->m_pBodyB->m_StateT1.m_Position;
 
 			Vec3f direction;
-			Subtract(direction, *pPosA, *pPosB);
-			Real length = Length(direction);
+			Vec3fSubtract(direction, *pPosA, *pPosB);
+			Real length = Vec3fLength(direction);
 
 			Real x = length - pSpring->m_RestLength;
 
-			if (pSpring->m_Compressible || (x > k0)) {
+			if (pSpring->m_ResistCompression || (x > k0)) {
 				Real force = pSpring->m_Stiffness * x;
 
 				// damping -b * difference in length between this frame and previous
@@ -710,8 +712,8 @@ void Physics::Engine::Simulate(Real dt)
 
 				pSpring->m_PrevLength = length;
 
-				MultiplyAccumulate(pSpring->m_pBodyA->m_Acc.m_Force, -force, direction);
-				MultiplyAccumulate(pSpring->m_pBodyB->m_Acc.m_Force,  force, direction);
+				Vec3fMultiplyAccumulate(pSpring->m_pBodyA->m_Acc.m_Force, -force, direction);
+				Vec3fMultiplyAccumulate(pSpring->m_pBodyB->m_Acc.m_Force,  force, direction);
 			}
 		}
 
@@ -805,7 +807,7 @@ void Physics::Engine::Simulate(Real dt)
 	}
 }
 
-void Physics::Engine::Render()
+void Physics::Engine :: Render()
 {
 	Physics::RigidBodyMap::iterator iter;
 

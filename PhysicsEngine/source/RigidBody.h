@@ -34,6 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 #include "GraphObj.h"
 #include "PhysicsEngineDef.h"
+#include "DynamicState.h"
 
 namespace Physics {
 
@@ -55,60 +56,17 @@ public:
 
 	void Clear()
 	{
-		PMath::Zero(m_Force);
-		PMath::Zero(m_Torque);
+		PMath::Vec3fZero(m_Force);
+		PMath::Vec3fZero(m_Torque);
 	}
 
-	void AddForce(PMath::Vec3f a)		{ PMath::Add(m_Force, a); }
-	void AddTorque(PMath::Vec3f a)	{ PMath::Add(m_Torque, a); }
+	void AddForce(PMath::Vec3f a)		{ PMath::Vec3fAdd(m_Force, a); }
+	void AddTorque(PMath::Vec3f a)	{ PMath::Vec3fAdd(m_Torque, a); }
 
 	PMath::Vec3f	m_Force;
 	PMath::Vec3f	m_Torque;
 };
 
-/** The state of a rigid body
- */
-
-class DynamicState
-{
-public:
-	DynamicState()
-	{
-		SetAtRest();
-	}
-
-	~DynamicState() { }
-
-	DynamicState& operator=(const DynamicState& right)
-	{	// assign _Right
-		if (this != &right) {
-			PMath::Set(m_Orientation,		right.m_Orientation);
-			PMath::Set(m_Position,			right.m_Position);
-			PMath::Set(m_Velocity,			right.m_Velocity);
-			PMath::Set(m_AngularVelocity,	right.m_AngularVelocity);
-			PMath::Set(m_AngularMomentum,	right.m_AngularMomentum);
-		}
-		return (*this);
-	}
-
-	void	SetAtRest()
-	{
-		m_Orientation[0] = Real(0.0f);
-		m_Orientation[0] = Real(0.0f);
-		m_Orientation[0] = Real(0.0f);
-		m_Orientation[0] = Real(1.0f);
-		PMath::Zero(m_Position);
-		PMath::Zero(m_Velocity);
-		PMath::Zero(m_AngularVelocity);
-		PMath::Zero(m_AngularMomentum);
-	}
-
-	PMath::Quaternion	m_Orientation;
-	PMath::Vec3f		m_Position;
-	PMath::Vec3f		m_Velocity;
-	PMath::Vec3f		m_AngularVelocity;
-	PMath::Vec3f		m_AngularMomentum;
-};
 
 /** @class	RigidBody
 	A rigid body interface class

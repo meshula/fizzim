@@ -49,20 +49,20 @@ namespace Physics {
 			m_Damping = k1;
 			m_RestLength = k1;
 			m_PrevLength = k1;
-			PMath::Zero(m_PosA);
-			PMath::Zero(m_PosB);
+			PMath::Vec3fZero(m_PosA);
+			PMath::Vec3fZero(m_PosB);
 			m_CenterAttachA = true;
 			m_CenterAttachB = true;
-			m_Compressible = true;
+			m_ResistCompression = true;
 		}
 
 		~Spring() { }
 
-		bool		m_Compressible;		//!< spring pushes if compressed
-
-		Real		m_Stiffness;		//!< k in Hooke's law
-		Real		m_Damping;			//!< b in Hooke's law
-		Real		m_RestLength;		//!< l in Hooke's law
+		bool		m_ResistCompression;	//!< spring pushes back if compressed
+	
+		Real		m_Stiffness;			//!< k in Hooke's law
+		Real		m_Damping;				//!< b in Hooke's law
+		Real		m_RestLength;			//!< l in Hooke's law
 
 		uint32			m_BodyA, m_BodyB;	//!< identifiers of body a and body b
 		PMath::Vec3f	m_PosA, m_PosB;		//!< attachment points of spring, relative to bodies' centers of mass

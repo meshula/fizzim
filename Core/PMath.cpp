@@ -290,3 +290,20 @@ void PMath::Mat44TrackBall(Mat44& result, const Vec3f p, const Vec3f q, const Ve
 }
 
 
+Real PMath::Vec3fDistancePointToSegment(const Vec3f point, const Vec3f point0, const Vec3f point1) {
+	Vec3f v, w;
+	Vec3fSubtract(v, point1, point0);
+	Vec3fSubtract(v, point,  point0);
+	Real c1 = Vec3fDot(w, v);
+	if (c1 <= k0) {
+		return Vec3fDistance(point, point0);
+	}
+	Real c2 = Vec3fDot(v, v);
+	if (c2 <= c1) {
+		return Vec3fDistance(point, point1);
+	}
+	Real b = c1 / c2;
+	Vec3fScale(v, b);
+	Vec3fAdd(w, v, point0);
+	return Vec3fDistance(point, w);
+}

@@ -42,6 +42,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 	#include <GL/glu.h>	// Header File For The GLu32 Library
 #endif
 
+#include "PMath.h"
+
 /// @namespace	GraphObj
 /// @brief		drawable things
 namespace GraphObj {
@@ -71,6 +73,18 @@ public:
 	float m_Radius;
 };
 
+class Mesh : public Base {
+public:
+	Mesh() { }
+	~Mesh() { }
+
+	void Render();
+
+	int		m_IndexCount;
+	float*	m_pNormals;			///< memory not owned by Mesh object
+	float*	m_pPositions;		///< memory not owned by Mesh object
+	uint16*	m_Indices;			///< memory not owned by Mesh object
+};
 
 }	// end namespace GraphObj
 

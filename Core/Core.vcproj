@@ -112,6 +112,12 @@
 				RelativePath=".\lq.c">
 			</File>
 			<File
+				RelativePath=".\ML_File.cpp">
+			</File>
+			<File
+				RelativePath=".\ModelReader_ReadObj.cpp">
+			</File>
+			<File
 				RelativePath=".\NearestNeighbours.cpp">
 			</File>
 			<File
@@ -119,6 +125,9 @@
 			</File>
 			<File
 				RelativePath="..\..\Sdl-1.2.5\src\main\win32\SDL_main.c">
+			</File>
+			<File
+				RelativePath=".\TextScanner.cpp">
 			</File>
 			<File
 				RelativePath=".\VOpenGLMain.cpp">
@@ -141,10 +150,16 @@
 				RelativePath=".\lq.h">
 			</File>
 			<File
+				RelativePath=".\ModelReader.h">
+			</File>
+			<File
 				RelativePath=".\NearestNeighbours.h">
 			</File>
 			<File
 				RelativePath=".\PMath.h">
+			</File>
+			<File
+				RelativePath=".\TextScanner.h">
 			</File>
 		</Filter>
 		<Filter

@@ -2,6 +2,8 @@
 #include "GraphObj.h"
 #include "PMath.h"
 
+#include <gl/gl.h>
+
 using PMath::Vec3f;
 
 namespace GraphObj {
@@ -114,5 +116,22 @@ void Sphere::Render()
 {
 	auxSolidSphere(m_Radius);
 }
+
+
+
+void Mesh::Render()
+{
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_INDEX_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+	glDisableClientState(GL_EDGE_FLAG_ARRAY);
+	glVertexPointer (3, GL_FLOAT, 3 * sizeof(float), m_pPositions);
+	glNormalPointer (GL_FLOAT, 3 * sizeof(float), m_pNormals);
+	glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_SHORT, m_Indices);
+}
+
+
 
 } // end namespace GraphObj

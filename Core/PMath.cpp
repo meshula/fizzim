@@ -70,7 +70,7 @@ void PMath::QuatToBasis(Mat44& pResult, const Quaternion a)
 	Game Developer Magazine, Feb. 1998, pp. 34-42
  */
 
-void PMath::QuatInputAngularVelocity(Quaternion& result, Real dt, const Vec3f a)
+void PMath::QuatInputAngularVelocity(Quaternion& result, Real dt, const Quaternion input, const Vec3f a)
 {
 	Quaternion velquat;
 	velquat[0] = a[0];	// x
@@ -78,15 +78,44 @@ void PMath::QuatInputAngularVelocity(Quaternion& result, Real dt, const Vec3f a)
 	velquat[2] = a[2];  // z
 	velquat[3] = k0;    // w
 
-	QuatMultiply(velquat, velquat, a);
+	QuatMultiply(velquat, velquat, input);
 	Real scale = dt * kHalf;
-	result[0] += velquat[0] * scale;
-	result[1] += velquat[1] * scale;
-	result[2] += velquat[2] * scale;
-	result[3] += velquat[3] * scale;
+	result[0] = input[0] + velquat[0] * scale;
+	result[1] = input[1] + velquat[1] * scale;
+	result[2] = input[2] + velquat[2] * scale;
+	result[3] = input[3] + velquat[3] * scale;
 
 	QuatNormalize(result, result);
 }
+
+/* 	roll	- rotation around x
+	pitch	- rotation around y
+	yaw		- rotation around z
+*/
+void PMath::QuatFromEuler(Quaternion& result, Real roll, Real pitch, Real yaw) {
+	Real cr, cp, cy, sr, sp, sy, cpcy, spsy;
+
+	Real ti = roll * kHalf;
+	Real tj = pitch * kHalf;
+	Real th = yaw * kHalf;
+
+	cr = Cos(ti);
+	cp = Cos(tj);
+	cy = Cos(th);
+
+	sr = Sin(ti);
+	sp = Sin(tj);
+	sy = Sin(th);
+
+	cpcy = cp * cy;
+	spsy = sp * sy;
+
+	result[0] = sr * cpcy - cr * spsy;
+	result[1] = cr * sp * cy + sr * cp * sy;
+	result[2] = cr * cp * sy - sr * sp * cy;
+	result[3] = cr * cpcy + sr * spsy;	// w
+}
+
 
 void PMath::Vec2fNormalize(Vec2f& result, const Vec2f source)
 {

@@ -26,7 +26,7 @@
 				RuntimeLibrary="5"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -124,6 +124,9 @@
 			</File>
 			<File
 				RelativePath=".\include\CollisionEngineDef.h">
+			</File>
+			<File
+				RelativePath=".\include\DynamicState.h">
 			</File>
 			<File
 				RelativePath=".\include\PhysicsEngine.h">

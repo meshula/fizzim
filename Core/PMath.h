@@ -34,6 +34,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include <math.h>
 #include <stdlib.h>
 
+typedef unsigned short	uint16;
 typedef unsigned int	uint32;
 typedef float			Real;
 
@@ -111,6 +112,9 @@ namespace PMath {
 	/// Reciprocal square root
 	inline	Real RecipSqrt(Real a)												{ return (k1 / sqrtf(a)); }
 
+	inline	Real Sin(Real a)													{ return sinf(a); }
+	inline	Real Cos(Real a)													{ return cosf(a); }
+
 	/// compare one vector to another
 	inline	bool Vec3fEqual(const Vec3f a, const Vec3f b, Real eps)				{ return (Abs(a[0]-b[0]) + Abs(a[1]-b[1]) + Abs(a[2]-b[2])) < eps; } 
 
@@ -178,7 +182,7 @@ namespace PMath {
 
 	inline	void Vec2fScale(Vec2f& a, Real scale)								{ a[0] *= scale; a[1] *= scale; }
 	inline	void Vec3fScale(Vec3f& a, Real scale)								{ a[0] *= scale; a[1] *= scale; a[2] *= scale; }
-	inline	void Vec3fScale(Vec3f& a, const Vec3f b, Real scale)					{ a[0] = b[0] * scale; a[1] = b[1] * scale; a[2] = b[2] * scale; }
+	inline	void Vec3fScale(Vec3f& a, Real scale, const Vec3f b)				{ a[0] = b[0] * scale; a[1] = b[1] * scale; a[2] = b[2] * scale; }
 
 	/// Set a vector to a scale copy of the other
 	inline	void Vec3fSetScaled(Vec3f& a, Real scale, const Vec3f b)			{ a[0] = scale * b[0]; a[1] = scale * b[1]; a[2] = scale * b[2]; }
@@ -196,6 +200,8 @@ namespace PMath {
 	/// Copy one quaternion to another
 	inline	void QuatSet(Quaternion& a, const Quaternion b)						{ a[0] = b[0]; a[1] = b[1]; a[2] = b[2]; a[3] = b[3]; }
 
+			void QuatFromEuler(Quaternion& a, Real roll, Real pitch, Real yaw);
+
 	/// Set the first 3 elements of the translation column of a matrix
 	inline	void Mat44SetTranslation(Mat44& pResult, const Vec3f a)				{ pResult[12] = a[0]; pResult[13] = a[1]; pResult[14] = a[2]; }
 
@@ -203,7 +209,7 @@ namespace PMath {
 	inline	void Mat44Identity(Mat44& pResult)									{ for (int i = 1; i < 15; ++i) pResult[i] = k0; 	pResult[0] = pResult[5] = pResult[10] = pResult[15] = k1; }
 
 	/// Update a quaternion's orientation with an angular velocity
-			void QuatInputAngularVelocity(Quaternion& result, Real dt, const Vec3f a);
+			void QuatInputAngularVelocity(Quaternion& result, Real dt, const Quaternion input, const Vec3f velocity);
 
 	/// Normalize a quaternion
 			void QuatNormalize(Quaternion& result, const Quaternion source);

@@ -9,7 +9,7 @@
 
 class Camera {
 public:
-	Camera() {
+	Camera() : m_Left(0.0f), m_Right(0.0f), m_Width(1.0f), m_Height(1.0f) {
 		PMath::Mat44Identity(m_Camera);
 	}
 	~Camera() { }
@@ -21,56 +21,13 @@ public:
 		PMath::Vec3fSet(m_Up, camera.m_Up);
 	}
 
-	/*
-Vector4 glToScreen(const Vector4& v) {
-    
-    // Get the matrices and viewport
+	void Interest(PMath::Vec3f pos) {
+		PMath::Vec3fSet(m_Interest, pos);
+		LookAt(m_Position, m_Interest, m_Up);
+	}
 
-    double modelView[16];
-    double projection[16];
-    double viewport[4];
-    double depthRange[2];
+	void SetViewport(float left, float right, float width, float height);
 
-    glGetDoublev(GL_MODELVIEW_MATRIX, modelView);
-    glGetDoublev(GL_PROJECTION_MATRIX, projection);
-    glGetDoublev(GL_VIEWPORT, viewport);
-    glGetDoublev(GL_DEPTH_RANGE, depthRange);
-
-    // Compose the matrices into a single row-major transformation
-
-
-    Vector4 T[4];
-    int r, c, i;
-    for (r = 0; r < 4; ++r) {
-        for (c = 0; c < 4; ++c) {
-            T[r][c] = 0;
-            for (i = 0; i < 4; ++i) {
-                // OpenGL matrices are column major
-
-
-                T[r][c] += projection[r + i * 4] * modelView[i + c * 4];
-            }
-        }
-    }
-
-    // Transform the vertex
-
-    Vector4 result;
-    for (r = 0; r < 4; ++r) {
-        result[r] = T[r].dot(v);
-    }
-
-    // Homogeneous divide
-
-    const double rhw = 1 / result.w;
-
-    return Vector4(
-        (1 + result.x * rhw) * viewport[2] / 2 + viewport[0],
-        (1 - result.y * rhw) * viewport[3] / 2 + viewport[1],
-        (result.z * rhw) * (depthRange[1] - depthRange[0]) + depthRange[0],
-        rhw);
-} 
-	*/
 	void LookAt(PMath::Vec3f viewpoint, PMath::Vec3f interest, PMath::Vec3f up) {
 		PMath::Vec3fSet(m_Position, viewpoint);
 		PMath::Vec3fSet(m_Interest, interest);
@@ -91,14 +48,11 @@ Vector4 glToScreen(const Vector4& v) {
 		m_Camera[14] = -(viewpoint[0] * m_Camera[2] + viewpoint[1] * m_Camera[6] + viewpoint[2] * m_Camera[10]);
 	}
 
-	void SetCameraMatrices(float width, float height) {
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();           
-		gluPerspective(45.0f, width / height, 1.0f, 1000.0f);
-
-		glMatrixMode(GL_MODELVIEW);
-		glLoadMatrixf(m_Camera);
+	void GetCameraMatrix(float *const pMatrix) {
+		for (int i = 0; i < 16; ++i) pMatrix[i] = m_Camera[i];
 	}
+
+	void SetCameraMatrices(float width, float height);
 
 	void Track(float mouseMotionX, float mouseMotionY) {
 		PMath::Vec3f temp;
@@ -134,8 +88,15 @@ Vector4 glToScreen(const Vector4& v) {
 		float tempM[16];
 		PMath::Mat44Identity(tempM);
 		PMath::Vec3f rot;
-		rot[0] = k0; rot[1] = k0; rot[2] = mouseMotionX;
+		rot[0] = k0; rot[1] = k0; rot[2] = mouseMotionX * k4;
 		PMath::Mat44Rotate(tempM, tempM, rot);
+
+		rot[0] = m_Camera[0];
+		rot[1] = m_Camera[4];
+		rot[2] = m_Camera[8];
+		PMath::Vec3fScale(rot, mouseMotionY * k4, rot);
+		PMath::Mat44Rotate(tempM, tempM, rot);
+
 		PMath::Mat44Transform3x3(temp, tempM, temp);
 		PMath::Vec3fAdd(m_Position, temp, m_Interest);
 		LookAt(m_Position, m_Interest, m_Up);
@@ -146,6 +107,7 @@ Vector4 glToScreen(const Vector4& v) {
 	PMath::Vec3f	m_Up;
 
 private:
+	float			m_Left, m_Right, m_Width, m_Height;
 	float			m_Camera[16];
 };
 

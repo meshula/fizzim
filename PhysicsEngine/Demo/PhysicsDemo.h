@@ -30,6 +30,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include "pmath.h"
 #include "application.h"
 #include "PhysicsEngine.h"
+#include "GraphObj.h"
 
 /** @class PhysicsDemo
 	@brief	This class implements a demo for the physics engine
@@ -42,7 +43,7 @@ public:
 #define kMaxSpheres 100
 
 	PhysicsDemo() : m_Mousex(0.0f), m_Mousey(0.0f), VOpenGLMain(),
-	m_Demo(0)
+	m_Demo(0), m_pModel(0), m_GroundRender(0)
 	{
 	}
 
@@ -58,13 +59,19 @@ public:
 	void MouseClick(eMouseButton button);
 	void MouseUnclick(eMouseButton button);
 
+	GraphObj::Mesh* m_pModel;					///< Memory not owned by PhysicsDemo
+
 protected:
 	int				m_Demo;
+	int				m_SphereCount;				///< number of spheres in current demo
 	Physics::Engine	m_Phys;
 	float			m_Mousex, m_Mousey;
 	uint32			m_GroundID;
 	uint32			m_Sphere[kMaxSpheres];
 	uint32			m_Spring[kMaxSprings];
+	GraphObj::Base*	m_pRender[kMaxSpheres];
+	float			m_Scale[kMaxSpheres];
+	GraphObj::Base*	m_GroundRender;
 };
 
 #endif

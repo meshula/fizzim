@@ -69,15 +69,21 @@ void PhysicsDemo::ExecutiveToyReset()
 {
 	m_Phys.SetMinTimeStep(1.0f/50.0f);
 	m_GroundID = CreateGroundPlane(m_Phys);
+	m_GroundRender = new GraphObj::Plane();
 
 	Vec3f			spherePos = {-5.0f, k0, k2};					// start 2 meters up
 
 	#define EXBALLS 5				
 	int i;
 
+	m_SphereCount = EXBALLS * 2;
+
 	// the swinging balls
 	for (i = 0; i < EXBALLS; ++i) {
 		m_Sphere[i] = m_Phys.AddRigidBodySphere(0.1f);
+		m_pRender[i] = m_pModel;
+
+		m_Scale[i] = 0.1f;
 
 		m_Phys.SetRigidBodyVec3f(m_Sphere[i],			Physics::Engine::propPosition,		spherePos);
 		m_Phys.SetRigidBodyScalar(m_Sphere[i],			Physics::Engine::propMass,			Real(1.25f));
@@ -91,6 +97,9 @@ void PhysicsDemo::ExecutiveToyReset()
 	spherePos[2] = 8.0f;
 	for (i = EXBALLS; i < EXBALLS + EXBALLS; ++i) {
 		m_Sphere[i] = m_Phys.AddRigidBodySphere(0.5f);
+		m_pRender[i] = m_pModel;
+
+		m_Scale[i] = 0.5f;
 
 		m_Phys.SetRigidBodyVec3f(m_Sphere[i],			Physics::Engine::propPosition,		spherePos);
 		m_Phys.SetRigidBodyScalar(m_Sphere[i],			Physics::Engine::propMass,			Real(1.0f));
@@ -126,10 +135,13 @@ void PhysicsDemo::SpringMeshDemoReset()
 {
 	m_Phys.SetMinTimeStep(1.0f/50.0f);
 	m_GroundID = CreateGroundPlane(m_Phys);
+	m_GroundRender = new GraphObj::Plane();
 }
 
 void PhysicsDemo::Reset()
 {
+	delete m_GroundRender;
+
 	m_Phys.SetMinTimeStep(1.0f/50.0f);
 	m_Phys.RemoveAll();
 	Vec3f			gravity = {k0, k0, Real(-9.8f)};
@@ -152,8 +164,11 @@ void PhysicsDemo::Reset()
 	Real length;
 
 	m_GroundID =	CreateGroundPlane(m_Phys);
+	m_GroundRender = new GraphObj::Plane();
 
 	m_Sphere[0] =	m_Phys.AddRigidBodySphere(kHalf);			// one meter diameter sphere
+	m_pRender[0] = m_pModel;
+	m_Scale[0] = kHalf;
 	Vec3f			spherePos = {k0, k0, k10};					// start 10 meters up
 					m_Phys.SetRigidBodyVec3f(m_Sphere[0],		Physics::Engine::propPosition,		spherePos);
 					m_Phys.SetRigidBodyBool(m_Sphere[0],		Physics::Engine::propTranslatable,	demo != 0);
@@ -161,6 +176,8 @@ void PhysicsDemo::Reset()
 
 					Vec3f			sphereSize = { 1.75f, 1.75f, 1.75f };
 	m_Sphere[1] =	m_Phys.AddRigidBodySphere(kHalf);			// one meter diameter sphere
+	m_pRender[1] = m_pModel;
+	m_Scale[1] = kHalf;
 					spherePos[0] += 0.25f;
 					spherePos[1] += 0.1f;
 					spherePos[2] += k4;
@@ -171,6 +188,8 @@ void PhysicsDemo::Reset()
 					m_Phys.SetRigidBodyBool(m_Sphere[1],		Physics::Engine::propCollidable,	true);
 
 	m_Sphere[2] =	m_Phys.AddRigidBodySphere(kHalf);			// one meter diameter sphere
+	m_pRender[2] = m_pModel;
+	m_Scale[2] = kHalf;
 					spherePos[0] += 0.25f;
 					spherePos[1] += k4;
 					spherePos[2] += k1;
@@ -179,6 +198,8 @@ void PhysicsDemo::Reset()
 					m_Phys.SetRigidBodyBool(m_Sphere[2],		Physics::Engine::propCollidable,	true);
 
 	m_Sphere[3] =	m_Phys.AddRigidBodySphere(kHalf);			// one meter diameter sphere
+	m_pRender[3] = m_pModel;
+	m_Scale[3] = kHalf;
 					spherePos[0] += k2;
 					spherePos[1] -= k2;
 					spherePos[2] -= k2;
@@ -186,10 +207,17 @@ void PhysicsDemo::Reset()
 					m_Phys.SetRigidBodyBool(m_Sphere[3],		Physics::Engine::propTranslatable,	true);
 					m_Phys.SetRigidBodyBool(m_Sphere[3],		Physics::Engine::propCollidable,	true);
 
+	m_SphereCount = 4;
+
+	if (demo == 1) {
+		for (int i = 0; i < 4; ++i) {
+			m_Phys.SetRigidBodyBool(m_Sphere[i],		Physics::Engine::propSpinnable,	true);
+		}
+	}
 
 	if (demo == 0) {
 		int i;
-	m_Phys.SetMinTimeStep(1.0f/150.0f);
+		m_Phys.SetMinTimeStep(1.0f/150.0f);
 		pPosA = m_Phys.GetRigidBodyVec3fPtr(m_Sphere[0],	Physics::Engine::propPosition);
 		pPosB = m_Phys.GetRigidBodyVec3fPtr(m_Sphere[3],	Physics::Engine::propPosition);
 		sphereSize[0] = 0.5f; sphereSize[1] = 0.2f; sphereSize[2] = 0.2f;
@@ -198,6 +226,10 @@ void PhysicsDemo::Reset()
 			Vec3fLerp(spherePos, ((Real) i+6) * (1.0f/20.0f), *pPosA, *pPosB);
 
 			m_Sphere[4 + i] = m_Phys.AddRigidBodySphere(0.2f);
+			m_Scale[4+i] = 0.2f;
+			m_pRender[4+i] = m_pModel;
+
+			++m_SphereCount;
 
 			m_Phys.SetRigidBodyVec3f(m_Sphere[4 + i],			Physics::Engine::propPosition,		spherePos);
 			m_Phys.SetRigidBodyScalar(m_Sphere[4 + i],			Physics::Engine::propMass,			Real(0.05f));
@@ -330,6 +362,20 @@ void PhysicsDemo::Reset()
 		}
 	}
 }
+#include "gl/gl.h"
+static void RigidBodyRender(GraphObj::Base* pRender, float scale, float const*const pMatrix)
+{ 
+	if (pRender) {
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+			glMultMatrixf(pMatrix);
+			glScalef(scale, scale, scale);
+		pRender->Render(); 
+
+		glPopMatrix();
+	}
+}
+
 
 void PhysicsDemo::Update(Real dt)
 {
@@ -352,7 +398,24 @@ void PhysicsDemo::Update(Real dt)
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	m_Phys.Render();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+		glLoadIdentity();
+		glColor3f(1.0f, 0.3f, 0.3f);
+		glEnable(GL_LIGHTING);
+
+		Mat44 rigidMatrix;
+		m_Phys.GetRigidBodyTransformMatrix(m_GroundID, rigidMatrix);
+
+		RigidBodyRender(m_GroundRender, 1.0f, &rigidMatrix[0]);
+
+		for (int i = 0; i < m_SphereCount; ++i) {
+			m_Phys.GetRigidBodyTransformMatrix(m_Sphere[i], rigidMatrix);
+			RigidBodyRender(m_pRender[i], m_Scale[i], &rigidMatrix[0]);
+		}
+		glDisable(GL_LIGHTING);
+	glPopMatrix();
 }
 
 

@@ -44,6 +44,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include <tchar.h>
 #include "SDL.h"
 
+#include "ML_File.h"
+#include "ModelReader.h"
 #include "PhysicsEngine.h"
 #include "PhysicsDemo.h"
 #include "Clock.h"
@@ -85,6 +87,20 @@ int main(int argc, char* argv[])
 	PhysicsDemo* pDemo = new PhysicsDemo();
 	pDemo->SetWindowName("Simple PhysicsEngine - by Nick Porcino");
 	pDemo->SetWindowSize(width, height, false);
+	pDemo->Reset();
+
+	MeshulaLabs::File modelFile("target.obj");
+	ModelReader reader;
+	reader.ReadOBJ(modelFile.GetContents(), modelFile.GetLength());
+
+	pDemo->m_pModel = new GraphObj::Mesh();
+	pDemo->m_pModel->m_pNormals =	&reader.normals[0];
+	pDemo->m_pModel->m_pPositions = &reader.vertices[0];
+	pDemo->m_pModel->m_IndexCount = (int) reader.faceIndices.size();
+	pDemo->m_pModel->m_Indices =	new uint16[reader.faceIndices.size()];
+	for (int i = 0; i < (int) reader.faceIndices.size(); ++i)
+		pDemo->m_pModel->m_Indices[i] = reader.faceIndices[i];
+
 	pDemo->Reset();
 
 	//glfInit();

@@ -18,6 +18,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Opcode", "..\Opcode\Opcode.
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Lab", "..\Lab\Lab.vcproj", "{F51D6EC2-48A0-47FA-8D0B-D6FACD50FE57}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F8FCA23F-89E7-4D86-9B8E-58D313B2C19E} = {F8FCA23F-89E7-4D86-9B8E-58D313B2C19E}
+		{7901E8AC-6CA6-442D-BF23-FB6BE8B0C034} = {7901E8AC-6CA6-442D-BF23-FB6BE8B0C034}
+		{1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE} = {1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfiguration) = preSolution
 		Debug = Debug
@@ -40,6 +47,10 @@ Global
 		{7901E8AC-6CA6-442D-BF23-FB6BE8B0C034}.Debug.Build.0 = Debug|Win32
 		{7901E8AC-6CA6-442D-BF23-FB6BE8B0C034}.Release.ActiveCfg = Release|Win32
 		{7901E8AC-6CA6-442D-BF23-FB6BE8B0C034}.Release.Build.0 = Release|Win32
+		{F51D6EC2-48A0-47FA-8D0B-D6FACD50FE57}.Debug.ActiveCfg = Debug|Win32
+		{F51D6EC2-48A0-47FA-8D0B-D6FACD50FE57}.Debug.Build.0 = Debug|Win32
+		{F51D6EC2-48A0-47FA-8D0B-D6FACD50FE57}.Release.ActiveCfg = Release|Win32
+		{F51D6EC2-48A0-47FA-8D0B-D6FACD50FE57}.Release.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 	EndGlobalSection

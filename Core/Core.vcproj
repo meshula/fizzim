@@ -150,6 +150,15 @@
 				RelativePath=".\lq.h">
 			</File>
 			<File
+				RelativePath=".\ML_Camera.h">
+			</File>
+			<File
+				RelativePath=".\ML_File.h">
+			</File>
+			<File
+				RelativePath=".\ML_Material.h">
+			</File>
+			<File
 				RelativePath=".\ModelReader.h">
 			</File>
 			<File

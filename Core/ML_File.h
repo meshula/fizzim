@@ -11,7 +11,7 @@ namespace MeshulaLabs {
 	class File
 	{
 	public:
-		File(char* pName);
+		File(char const*const pName);
 		~File();
 
 		char const* GetContents() const { return m_pBuf; }

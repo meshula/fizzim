@@ -41,6 +41,9 @@ typedef float			Real;
 // common constants
 
 #define kEps	Real(0.0001f)
+#define kN4	Real(-4.0f)
+#define kN3	Real(-3.0f)
+#define kN2	Real(-2.0f)
 #define kN1	Real(-1.0f)
 #define k0		Real(0.0f)
 #define kHalf	Real(0.5f)
@@ -202,7 +205,7 @@ namespace PMath {
 
 			void QuatFromEuler(Quaternion& a, Real roll, Real pitch, Real yaw);
 	
-	inline	void Mat44Set(Mat44& pResult, float* pMatrix)						{ for (int i = 0; i < 16; ++i) { pResult[i] = pMatrix[i]; } }
+	inline	void Mat44Set(Mat44& pResult, float const*const pMatrix)			{ for (int i = 0; i < 16; ++i) { pResult[i] = pMatrix[i]; } }
 
 
 	/// Set the first 3 elements of the translation column of a matrix
@@ -217,14 +220,21 @@ namespace PMath {
 		pResult[2] = z[0]; pResult[6] = z[1]; pResult[10] = z[2];
 	}
 
-	inline	void Mat44Transform(Vec3f& pResult, const Mat44& pMatrix, const Vec3f a) {
-		Vec3f temp;
+	inline	void Mat44Transform3x3(Vec3f& pResult, const Mat44& pMatrix, const Vec3f a) {
+		Vec3f temp;																			// a may be pResult, so copy it
 		Vec3fSet(temp, a);
 		pResult[0] = temp[0] * pMatrix[0] + temp[1] * pMatrix[4] + temp[2] * pMatrix[8];
 		pResult[1] = temp[0] * pMatrix[1] + temp[1] * pMatrix[5] + temp[2] * pMatrix[9];
 		pResult[2] = temp[0] * pMatrix[2] + temp[1] * pMatrix[6] + temp[2] * pMatrix[10];
 	}
 
+	inline	void Mat44Transform(Vec3f& pResult, const Mat44& pMatrix, const Vec3f a) {
+		Vec3f temp;																			// a may be pResult, so copy it
+		Vec3fSet(temp, a);
+		pResult[0] = temp[0] * pMatrix[0] + temp[1] * pMatrix[4] + temp[2] * pMatrix[8]  + pMatrix[12];
+		pResult[1] = temp[0] * pMatrix[1] + temp[1] * pMatrix[5] + temp[2] * pMatrix[9]  + pMatrix[13];
+		pResult[2] = temp[0] * pMatrix[2] + temp[1] * pMatrix[6] + temp[2] * pMatrix[10] + pMatrix[14];
+	}
 			void Mat44SetRotateVectorToVector (Mat44& result, const Vec3f theop, const Vec3f theoq);			void Mat44Rotate(Mat44& result, const Mat44 src, const Vec3f args);
 			void Mat44TrackBall(Mat44& result, const Vec3f p, const Vec3f q, const Vec3f cueCenter, Real cueRadius);
 

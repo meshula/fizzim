@@ -132,6 +132,27 @@ void Mesh::Render()
 	glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_SHORT, m_Indices);
 }
 
+void Mesh::CalcBoundingBox(Vec3f& center, Vec3f& extent)
+{
+	PMath::Vec3f minPt, maxPt;
+	minPt[0] =  1.0e6f; minPt[1] =  1.0e6f; minPt[2] =  1.0e6f;
+	maxPt[0] = -1.0e6f; maxPt[1] = -1.0e6f; maxPt[2] = -1.0e6f;
+	int i;
+	for (i = 0; i < m_IndexCount; ++i) {
+		int index = m_Indices[i];
+		if (m_pPositions[index*3    ] < minPt[0]) minPt[0] = m_pPositions[index*3    ];
+		if (m_pPositions[index*3 + 1] < minPt[1]) minPt[1] = m_pPositions[index*3 + 1];
+		if (m_pPositions[index*3 + 2] < minPt[2]) minPt[2] = m_pPositions[index*3 + 2];
+		if (m_pPositions[index*3    ] > maxPt[0]) maxPt[0] = m_pPositions[index*3    ];
+		if (m_pPositions[index*3 + 1] > maxPt[1]) maxPt[1] = m_pPositions[index*3 + 1];
+		if (m_pPositions[index*3 + 2] > maxPt[2]) maxPt[2] = m_pPositions[index*3 + 2];
+	}
+
+	for (i = 0; i < 3; ++i) {
+		extent[i] = (maxPt[i] - minPt[i]) * kHalf;
+		center[i] = minPt[i] + extent[i]; 
+	}
+}
 
 
 } // end namespace GraphObj

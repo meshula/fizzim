@@ -3,6 +3,18 @@
 #include "GraphObj.h"
 #include "Application.h"
 
+#ifdef WIN32
+	#define WIN32_LEAN_AND_MEAN
+	#include <windows.h>
+#endif
+#if defined(__APPLE__) && defined(__MACH__)
+	#include <OpenGL/gl.h>		// Header File For The OpenGL32 Library
+	#include <OpenGL/glu.h>	// Header File For The GLu32 Library
+#else
+	#include <GL/gl.h>		// Header File For The OpenGL32 Library
+	#include <GL/glu.h>	// Header File For The GLu32 Library
+#endif
+
 void VOpenGLMain::ClearWindow() {
 	glDrawBuffer(GL_BACK);
 	glViewport ( 0, 0, mWindowWidth, mWindowHeight);
@@ -25,14 +37,14 @@ void VOpenGLMain::ClearWindow() {
 	mRight = right;
 	mTop = top;
 
-	gluOrtho2D (0.0f, right, 0.0f, top);			// left right, bottom top
+	gluOrtho2D (0.0f, right, 0.0f, top);					// left right, bottom top
 	glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
 	glDisable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);				// The Type Of Depth Test To Do
+	glDepthFunc(GL_LESS);									// The Type Of Depth Test To Do
 	glClear ( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 }
 
-GLvoid KillGLWindow(GLvoid)								// Properly Kill The Window
+GLvoid KillGLWindow(GLvoid)									// Properly Kill The Window
 {
 }
 
@@ -42,6 +54,7 @@ bool InitGL(int Width, int Height)
 	glClearDepth(1.0);					
 	glDepthFunc(GL_LESS);					
 	glEnable(GL_DEPTH_TEST);				
+	glDepthMask(GL_TRUE); 
 	glShadeModel(GL_SMOOTH);	
 
 	glDisable(GL_LIGHTING);

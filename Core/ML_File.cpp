@@ -4,36 +4,43 @@
 
 #include "ML_File.h"
 
-
-MeshulaLabs :: File :: File(char* pName) {
-
 #ifdef WIN32
+#define WRONGSLASH '/'
+#define GOODSLASH '\\'
+#else
+#define WRONGSLASH '\\'
+#define GOODSLASH '/'
+#endif
+
+MeshulaLabs :: File :: File(char const*const pName) {
 	int length = (int) std::strlen(pName);
 	char* _pName = new char[length + 1];
 	for (int i = 0; i < length; ++i) {
-		if (pName[i] == '/')
-			_pName[i] = '\\';
+		if (pName[i] == WRONGSLASH)
+			_pName[i] = GOODSLASH;
 		else
 			_pName[i] = pName[i];
 	}
 	_pName[i] = '\0';
-#else
-	char* _pName = pName;
-#endif
 
 	FILE* pFile = fopen(_pName, "rb");
-	fseek(pFile, 0, SEEK_END);
-	m_BuffSize = ftell(pFile);
-	fseek(pFile, 0, SEEK_SET);
-	
-	m_pBuf = new char[m_BuffSize + 1];
-	fread(m_pBuf, 1, m_BuffSize, pFile);
-	fclose(pFile);
+	if (pFile) {
+		fseek(pFile, 0, SEEK_END);
+		m_BuffSize = ftell(pFile);
+		fseek(pFile, 0, SEEK_SET);
+		
+		m_pBuf = new char[m_BuffSize + 1];
+		fread(m_pBuf, 1, m_BuffSize, pFile);
+		fclose(pFile);
+	}
+	else {
+		m_BuffSize = 0;
+		m_pBuf = new char[m_BuffSize + 1];
+	}
+
 	m_pBuf[m_BuffSize] = '\0';
 
-#ifdef WIN32
 	delete [] _pName;
-#endif
 }
 
 MeshulaLabs :: File :: ~File() {

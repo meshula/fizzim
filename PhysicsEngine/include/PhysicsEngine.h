@@ -223,9 +223,6 @@ namespace Physics {
 		///	Run one step of the simulation given dt in seconds
 		void				Simulate(Real dt);
 
-		/// Intended for debugging use only
-		void				Render();
-
 	protected:
 		PEAux*	m_pAux;
 	};

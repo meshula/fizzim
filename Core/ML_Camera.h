@@ -9,24 +9,17 @@
 
 class Camera {
 public:
-	Camera() : m_Left(0.0f), m_Right(0.0f), m_Width(1.0f), m_Height(1.0f) {
+	Camera() : m_Left(0.0f), m_Right(0.0f), m_Width(1.0f), m_Height(1.0f), m_Near(1.0f), m_Far(1000.0f) {
 		PMath::Mat44Identity(m_Camera);
 	}
+
 	~Camera() { }
 
-	void Set(const Camera& camera) {
-		PMath::Mat44Set(m_Camera, camera.m_Camera);
-		PMath::Vec3fSet(m_Position, camera.m_Position);
-		PMath::Vec3fSet(m_Interest, camera.m_Interest);
-		PMath::Vec3fSet(m_Up, camera.m_Up);
-	}
-
-	void Interest(PMath::Vec3f pos) {
-		PMath::Vec3fSet(m_Interest, pos);
-		LookAt(m_Position, m_Interest, m_Up);
-	}
-
+	void Set(const Camera& camera);
+	void Interest(PMath::Vec3f pos);
 	void SetViewport(float left, float right, float width, float height);
+	float Near() const { return m_Near; }
+	float Far() const { return m_Far; }
 
 	void LookAt(PMath::Vec3f viewpoint, PMath::Vec3f interest, PMath::Vec3f up) {
 		PMath::Vec3fSet(m_Position, viewpoint);
@@ -52,55 +45,13 @@ public:
 		for (int i = 0; i < 16; ++i) pMatrix[i] = m_Camera[i];
 	}
 
-	void SetCameraMatrices(float width, float height);
+	float const* GetCameraMatrixPtr() { return &m_Camera[0]; }
 
-	void Track(float mouseMotionX, float mouseMotionY) {
-		PMath::Vec3f temp;
-		temp[0] = m_Camera[1];
-		temp[1] = m_Camera[5];
-		temp[2] = m_Camera[9];
-		PMath::Vec3fScale(temp, k10 * mouseMotionY, temp);
-		PMath::Vec3fAdd(m_Position, m_Position, temp);
-		PMath::Vec3fAdd(m_Interest, m_Interest, temp);
-		temp[0] = m_Camera[0];
-		temp[1] = m_Camera[4];
-		temp[2] = m_Camera[8];
-		PMath::Vec3fScale(temp, -k10 * mouseMotionX, temp);
-		PMath::Vec3fAdd(m_Position, m_Position, temp);
-		PMath::Vec3fAdd(m_Interest, m_Interest, temp);
-		LookAt(m_Position, m_Interest, m_Up);
-	}
+	void SetCameraMatrices(float width, float height, float near, float far);
 
-	void Dolly(float mouseMotionX, float mouseMotionY) {
-		PMath::Vec3f temp;
-		temp[0] = m_Camera[2];
-		temp[1] = m_Camera[6];
-		temp[2] = m_Camera[10];
-		PMath::Vec3fScale(temp, k10 * mouseMotionY, temp);
-		PMath::Vec3fAdd(m_Position, m_Position, temp);
-		PMath::Vec3fAdd(m_Interest, m_Interest, temp);
-		LookAt(m_Position, m_Interest, m_Up);
-	}
-
-	void Tumble(float mouseMotionX, float mouseMotionY) {
-		PMath::Vec3f temp;
-		PMath::Vec3fSubtract(temp, m_Position, m_Interest);
-		float tempM[16];
-		PMath::Mat44Identity(tempM);
-		PMath::Vec3f rot;
-		rot[0] = k0; rot[1] = k0; rot[2] = mouseMotionX * k4;
-		PMath::Mat44Rotate(tempM, tempM, rot);
-
-		rot[0] = m_Camera[0];
-		rot[1] = m_Camera[4];
-		rot[2] = m_Camera[8];
-		PMath::Vec3fScale(rot, mouseMotionY * k4, rot);
-		PMath::Mat44Rotate(tempM, tempM, rot);
-
-		PMath::Mat44Transform3x3(temp, tempM, temp);
-		PMath::Vec3fAdd(m_Position, temp, m_Interest);
-		LookAt(m_Position, m_Interest, m_Up);
-	}
+	void Track(float mouseMotionX, float mouseMotionY);
+	void Dolly(float mouseMotionX, float mouseMotionY);
+	void Tumble(float mouseMotionX, float mouseMotionY);
 
 	PMath::Vec3f	m_Position;
 	PMath::Vec3f	m_Interest;
@@ -108,6 +59,7 @@ public:
 
 private:
 	float			m_Left, m_Right, m_Width, m_Height;
+	float			m_Near, m_Far;
 	float			m_Camera[16];
 };
 

@@ -2,28 +2,49 @@
 //
 
 #include "stdafx.h"
-#include "basictypes.h"
-
 #include <vector>
-
-// TestParser.cpp : Defines the entry point for the console application.
-//
 
 #include <expat.h>
 
-#include <string>
+#include "basictypes.h"
+#include "Fizzim.h"
+#include "StringTable.h"
+
+///////////////////// LANDRU EXPORT ////////////////////////////////////
+
+void FizzimLandruExport(FILE* pOutFile, Fizzim::MachineSet& machines)
+{
+	fprintf(pOutFile, "Landru {\n");
+	for (int i = 0; i < machines.m_Nodes.size(); ++i)
+	{
+		int machineName = machines.m_Nodes[i]->m_Name;
+		fprintf(pOutFile, "   %s {\n", s_StringTable[machineName]);
+
+		for (int j = 0; j < machines.m_Nodes[i]->m_Transitions.size(); ++j)
+		{
+			int gotoID = machines.m_Nodes[machines.m_Nodes[i]->m_Transitions[j]->m_To]->m_Name;
+			int conditionID = machines.m_Nodes[i]->m_Transitions[j]->m_Condition;
+			fprintf(pOutFile, "      on (%s) { goto %s }\n", s_StringTable[conditionID], s_StringTable[gotoID]);
+		}
+		fprintf(pOutFile, "   }\n");
+	}
+	fprintf(pOutFile, "}\n");
+}
+
+///////////////////// XML IMPORT  /////////////////////////////////////
 
 int Depth;
 
 FILE* outFile;
 class Group;
 static std::vector<Group*> s_Groups;
-static std::vector<char*> s_Strings;
+
+static StringTable s_StringTable;
 
 class Group
 {
 public:
-	Group() :	m_BoxID(-1),
+	Group() :	m_NodeID(-1),
 				m_TextID(-1),
 				m_ArcID(-1),
 				m_From(-1),
@@ -33,17 +54,17 @@ public:
 
 	void Render(FILE* outFile)
 	{
-		if (m_BoxID != -1)
+		if (m_NodeID != -1)
 		{
-			fprintf(outFile, "box %ld, %s\n", m_BoxID, s_Strings[m_TextID]);
+			fprintf(outFile, "box %ld, %s\n", m_NodeID, s_StringTable[m_TextID]);
 		}
 		else if (m_ArcID != -1)
 		{
-			fprintf(outFile, "arc %ld, %s from %ld to %ld\n", m_ArcID, s_Strings[m_TextID], m_From, m_To);
+			fprintf(outFile, "arc %ld, %s from %ld to %ld\n", m_ArcID, s_StringTable[m_TextID], m_From, m_To);
 		}
 	}
 
-	int16 m_BoxID;
+	int16 m_NodeID;
 	int16 m_TextID;
 	int16 m_ArcID;
 	int16 m_From;
@@ -114,7 +135,7 @@ static void start(void *data, const char *el, const char **attr)
 
 		switch (kind)
 		{
-		case kBox:	s_pCurrGroup->m_BoxID = id; break;
+		case kBox:	s_pCurrGroup->m_NodeID = id; break;
 
 		// don't record text, text id's are actually the names
 		//case kText:	s_pCurrGroup->m_TextID = id; break;
@@ -191,7 +212,7 @@ static void end(void *data, const char *el)
 		}
 	}
 
-	Depth--;
+	--Depth;
 }  /* End of end handler */
 
 
@@ -215,17 +236,13 @@ static void FizzimCharacterDataHandler(void *userData, const XML_Char *s, int le
 		{
 			char* pString = new char[len+1];
 			strcpy(pString, buff);
-			s_pCurrGroup->m_TextID = s_Strings.size();
-			s_Strings.push_back(pString);
-			printf("Arc: textid:%ld %s\n", s_pCurrGroup->m_TextID, buff);
+			s_pCurrGroup->m_TextID = s_StringTable.Add(pString);
 		}
-		else if (s_pCurrGroup->m_BoxID != -1)
+		else if (s_pCurrGroup->m_NodeID != -1)
 		{
 			char* pString = new char[len+1];
 			strcpy(pString, buff);
-			s_pCurrGroup->m_TextID = s_Strings.size();
-			s_Strings.push_back(pString);
-			printf("Node: textid:%ld %s\n", s_pCurrGroup->m_TextID, buff);
+			s_pCurrGroup->m_TextID = s_StringTable.Add(pString);
 		}
 		else
 		{
@@ -236,25 +253,124 @@ static void FizzimCharacterDataHandler(void *userData, const XML_Char *s, int le
 
 void SanityCheck()
 {
-	// first, make sure one and only start node exists
-	int startNodes = 0;
-	
+}
+
+class NodeDescriptor
+{
+public:
+	NodeDescriptor(int id, int name) : m_ID(id), m_TextID(name), m_HasIncomingArc(false) { }
+
+	int		m_ID;
+	int		m_TextID;
+	bool	m_HasIncomingArc;
+};
+
+class ArcDescriptor
+{
+public:
+	ArcDescriptor(int id, int name, int from, int to) : m_ID(id), m_TextID(name), m_From(from), m_To(to) { }
+
+	int		m_ID;
+	int		m_TextID;
+	int		m_From;
+	int		m_To;
+};
+
+
+void CreateMachines(Fizzim::MachineSet& machines)
+{
 	int i;
-	for (i = 0; i < s_Strings.size(); ++i)
+
+	std::vector <NodeDescriptor*>	allNodes;
+	std::vector <ArcDescriptor*>	allArcs;
+
+	// find all nodes and arcs
+	for (i = 0; i < s_Groups.size(); ++i)
 	{
-		if (!stricmp("start", s_Strings[i]))
+		if (s_Groups[i]->m_NodeID != -1)
 		{
-			++startNodes;
+			NodeDescriptor* pND = new NodeDescriptor(s_Groups[i]->m_NodeID, s_Groups[i]->m_TextID);
+			allNodes.push_back(pND);
+		}
+		else if (s_Groups[i]->m_ArcID != -1)
+		{
+			ArcDescriptor* pAD = new ArcDescriptor(s_Groups[i]->m_NodeID, s_Groups[i]->m_TextID, s_Groups[i]->m_From, s_Groups[i]->m_To);
+			allArcs.push_back(pAD);
 		}
 	}
 
-	switch(startNodes)
+	// now mark all nodes that are transitioned into
+	for (i = 0; i < allArcs.size(); ++i)
 	{
-	case 0:		printf("Error: No start node found\n");	break;
-	case 1:												break;	// perfect
-	default:	printf("Error: More than one start node found\n"); break;
+		int to = allArcs[i]->m_To;
+		for (int j = 0; j < allNodes.size(); ++j)
+		{
+			if (allNodes[j]->m_ID == to)
+				allNodes[j]->m_HasIncomingArc = true;
+		}
 	}
+
+	std::vector <int> nodeIDs;
+
+	// loop over all nodes
+	for (i = 0; i < allNodes.size(); ++i)
+	{
+		// record all start nodes
+		if (!allNodes[i]->m_HasIncomingArc)
+		{
+			machines.m_StartNodes.push_back(machines.m_Nodes.size());
+		}
+
+		int id = allNodes[i]->m_ID;
+
+		// record all states
+		Fizzim::Node* pNode = new Fizzim::Node(allNodes[i]->m_TextID);
+		nodeIDs.push_back(allNodes[i]->m_ID);
+
+		// add all transitions from this state
+		for (int j = 0; j < allArcs.size(); ++j)
+		{
+			if (allArcs[j]->m_From == id)
+			{
+				Fizzim::Transition* pTrans = new Fizzim::Transition(allArcs[j]->m_TextID, allArcs[j]->m_To);
+				pNode->m_Transitions.push_back(pTrans);
+			}
+		}
+
+		machines.m_Nodes.push_back(pNode);
+	}
+
+	// now resolve all transitions to refer to the proper nodes
+
+	for (i = 0; i < machines.m_Nodes.size(); ++i)
+	{
+		// loop over all transitions within a state
+		for (int j = 0; j < machines.m_Nodes[i]->m_Transitions.size(); ++j)
+		{
+			// search all nodeIDs for the one to transition to
+			for (int k = 0; k < nodeIDs.size(); ++k)
+			{
+				// if the cached nodeID refers to the node we want to transition to,
+				if (machines.m_Nodes[i]->m_Transitions[j]->m_To == nodeIDs[k])
+				{
+					// then k is the index of the node we are transitioning to
+					machines.m_Nodes[i]->m_Transitions[j]->m_To = k;
+					
+					// stop the search and continue with the next transition.
+					break;
+				}
+			}
+		}
+	}
+
+	// clean up
+	for (i = 0; i < allNodes.size(); ++i)
+		delete allNodes[i];
+	for (i = 0; i < allArcs.size(); ++i)
+		delete allArcs[i];
 }
+
+///////////////////// MAIN /////////////////////////////////////////////
 
 int main(int argc, char* argv[])
 {
@@ -301,24 +417,18 @@ int main(int argc, char* argv[])
 	
 	fclose(outFile);
 
-	// now sanity check the read-in data
+	Fizzim::MachineSet machines;
+	CreateMachines(machines);
 
-	SanityCheck();
-
-	outFile = fopen("test.fsm", "wt");
-
-	fprintf(outFile, "nodes: \n");
-
-	printf("Found %ld groups\n", s_Groups.size());
-
-	int i;
-	for (i = 0; i < s_Groups.size(); ++i)
-		s_Groups[i]->Render(outFile);
-
+	outFile = fopen("test.landru", "wt");
+	FizzimLandruExport(outFile, machines);
 	fclose(outFile);
 
+	// now sanity check the read-in data
+	SanityCheck();
+
 	// deallocate the groups
-	for (i = 0; i < s_Groups.size(); ++i)
+	for (int i = 0; i < s_Groups.size(); ++i)
 		delete s_Groups[i];
 
 	delete [] buffer;

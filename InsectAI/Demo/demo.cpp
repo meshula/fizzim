@@ -1003,8 +1003,8 @@ int main(int argc, char **argv)
 	fprintf(stderr, "SDL initialized\n");
 
 	Clock myClock;
-	myClock.Update();
-	prevTime = myClock.GetSimulationTime();
+	myClock.update();
+	prevTime = myClock.getSimulationTime();
 
 	int width = 800;
 	int height = 800;
@@ -1022,8 +1022,8 @@ int main(int argc, char **argv)
 #endif
 
 	while ( !done ) {
-		myClock.Update();
-		newTime = myClock.GetSimulationTime();
+		myClock.update();
+		newTime = myClock.getSimulationTime();
 		float dt = (float)(newTime - prevTime);
 		prevTime = newTime;
 

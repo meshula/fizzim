@@ -8,11 +8,21 @@ using std::vector;
 #include "TextScanner.h"
 #include "ModelReader.h"
 
-ModelReader :: ~ModelReader() {
-}
-
 void ModelReader::ReadOBJ(char const*const pSource, int dataSize)
 {
+	// an OBJ file contains one or more models, indicated by 'o'.
+	Model* pModel = new Model();
+	models.push_back(pModel);
+
+	// an OBJ file contains a single vertex pool
+	VertexPool* pVertexPool = new VertexPool();
+	vertexPools.push_back(pVertexPool);
+
+	SubModel* pSubModel = new ModelReader::SubModel();
+	pModel->subModels.push_back(pSubModel);
+	pSubModel->vertexPool = pVertexPool;
+	pSubModel->componentType = SubModel::kIndexedComponents;
+
 	char const* pCurr = pSource;
 	char const* pEnd  = pSource + dataSize;
 
@@ -42,9 +52,9 @@ void ModelReader::ReadOBJ(char const*const pSource, int dataSize)
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, x);
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, y);
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, z);
-							normals.push_back(x);
-							normals.push_back(y);
-							normals.push_back(z);
+							pVertexPool->normals.push_back(x);
+							pVertexPool->normals.push_back(y);
+							pVertexPool->normals.push_back(z);
 							break;
 						
 						case 't':	// vertex texture
@@ -52,18 +62,18 @@ void ModelReader::ReadOBJ(char const*const pSource, int dataSize)
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, x);
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, y);
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, z);
-							mapping.push_back(x);
-							mapping.push_back(y);
-							mapping.push_back(z);
+							pVertexPool->mapping.push_back(x);
+							pVertexPool->mapping.push_back(y);
+							pVertexPool->mapping.push_back(z);
 							break;
 						
 						default:	// vertex position
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, x);
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, y);
 							pCurr = TextScanner::GetFloat(pCurr, pEnd, z);
-							vertices.push_back(x);
-							vertices.push_back(y);
-							vertices.push_back(z);
+							pVertexPool->vertices.push_back(x);
+							pVertexPool->vertices.push_back(y);
+							pVertexPool->vertices.push_back(z);
 							break;
 					}
 				}
@@ -108,17 +118,17 @@ void ModelReader::ReadOBJ(char const*const pSource, int dataSize)
 						++index;
 						if (index == 3)
 						{
-							faceIndices.push_back(v[0]);
-							faceIndices.push_back(v[1]);
-							faceIndices.push_back(v[2]);
+							pSubModel->faceIndices.push_back(v[0]);
+							pSubModel->faceIndices.push_back(v[1]);
+							pSubModel->faceIndices.push_back(v[2]);
 
-							normalIndices.push_back(n[0]);
-							normalIndices.push_back(n[1]);
-							normalIndices.push_back(n[2]);
+							pSubModel->normalIndices.push_back(n[0]);
+							pSubModel->normalIndices.push_back(n[1]);
+							pSubModel->normalIndices.push_back(n[2]);
 							
-							uvIndices.push_back(t[0]);
-							uvIndices.push_back(t[1]);
-							uvIndices.push_back(t[2]);
+							pSubModel->uvIndices.push_back(t[0]);
+							pSubModel->uvIndices.push_back(t[1]);
+							pSubModel->uvIndices.push_back(t[2]);
 
 							// if a polygon was encountered, turn it into triangles
 							// by creating a fan
@@ -131,7 +141,19 @@ void ModelReader::ReadOBJ(char const*const pSource, int dataSize)
 				}
 				break;
 				
-			case 'o':	// indicates an object name. skip it!
+			case 'o':	// indicates an object name. start a new model
+				{
+					pCurr = TextScanner::ScanForEndOfLine(pCurr, pEnd);	// skip it for the moment
+
+					pModel = new Model();
+					models.push_back(pModel);
+
+					pSubModel = new ModelReader::SubModel();
+					pModel->subModels.push_back(pSubModel);
+					pSubModel->componentType = SubModel::kIndexedComponents;
+				}
+				break;
+
 			case 'm':	// material library m is first character of mtllib
 				{
 					pCurr = TextScanner::ScanForEndOfLine(pCurr, pEnd);	// skip it for the moment

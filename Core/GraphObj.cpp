@@ -49,8 +49,6 @@ void drawXYCheckerboardGrid (const float size,
     const float half = size/2;
     const float spacing = size / subsquares;
 
-	glDisable(GL_LIGHTING);
-    //beginDoubleSidedDrawing ();
     {
         bool flag1 = false;
         float p = -half;
@@ -67,11 +65,6 @@ void drawXYCheckerboardGrid (const float size,
 				PMath::Vec3fSet(b, corner); b[0] += spacing;
 				PMath::Vec3fSet(c, corner); c[0] += spacing; c[1] += spacing;
 				PMath::Vec3fSet(d, corner); d[1] += spacing;
-//                iDrawQuadrangle (corner,
-  //                               corner + Vec3 (spacing,       0, 0 ),
-    //                             corner + Vec3 (spacing, spacing, 0 ),
-      //                           corner + Vec3 (0,       spacing, 0 ),
-        //                         flag2 ? color1 : color2);
 				Vec3f color;
 				if (flag2) {
 					PMath::Vec3fSet(color, color1);
@@ -87,8 +80,6 @@ void drawXYCheckerboardGrid (const float size,
             p += spacing;
         }
     }
-	glEnable(GL_LIGHTING);
-    //endDoubleSidedDrawing ();
 }
 
 
@@ -97,19 +88,9 @@ void drawXYCheckerboardGrid (const float size,
 void Plane::Render()
 {
 	Vec3f color1; color1[0] = 0.35f;  color1[1] = 0.35f;  color1[2] = 0.35f; 
-	Vec3f color2; color2[0] = 0.5f;   color2[1] = 0.5f;   color2[2] = 0.5f; 
+	Vec3f color2; color2[0] = 0.4f;   color2[1] = 0.4f;   color2[2] = 0.4f; 
 	Vec3f center; center[0] = k0; center[1] = k0; center[2] = k0;
 	drawXYCheckerboardGrid(100, 20, center, color1, color2);
-/*	const float kPlaneSize = 10.0f;
-	glBegin(GL_LINES);
-	glVertex3f(-kPlaneSize, 0.0f, 0.0f); glVertex3f(kPlaneSize, 0.0f, 0.0f);	// cross
-	glVertex3f(0.0f, -kPlaneSize, 0.0f); glVertex3f(0.0f, kPlaneSize, 0.0f);	// cross
-	glVertex3f(-0.5f * kPlaneSize, -0.5f * kPlaneSize, 0.0f); glVertex3f(-0.5f * kPlaneSize, 0.5f * kPlaneSize, 0.0f);  // box
-	glVertex3f(-0.5f * kPlaneSize, 0.5f * kPlaneSize, 0.0f); glVertex3f(0.5f * kPlaneSize, 0.5f * kPlaneSize, 0.0f);
-	glVertex3f(0.5f * kPlaneSize, 0.5f * kPlaneSize, 0.0f); glVertex3f(0.5f * kPlaneSize, -0.5f * kPlaneSize, 0.0f);
-	glVertex3f(0.5f * kPlaneSize, -0.5f * kPlaneSize, 0.0f); glVertex3f(-0.5f * kPlaneSize, -0.5f * kPlaneSize, 0.0f);
-	glEnd();
-	*/
 }
 
 void Sphere::Render()
@@ -129,7 +110,7 @@ void Mesh::Render()
 	glDisableClientState(GL_EDGE_FLAG_ARRAY);
 	glVertexPointer (3, GL_FLOAT, 3 * sizeof(float), m_pPositions);
 	glNormalPointer (GL_FLOAT, 3 * sizeof(float), m_pNormals);
-	glDrawElements(GL_TRIANGLES, m_IndexCount, GL_UNSIGNED_SHORT, m_Indices);
+	glDrawElements(GL_TRIANGLES, (GLsizei) m_IndexCount, GL_UNSIGNED_SHORT, m_Indices);
 }
 
 void Mesh::CalcBoundingBox(Vec3f& center, Vec3f& extent)
@@ -137,7 +118,7 @@ void Mesh::CalcBoundingBox(Vec3f& center, Vec3f& extent)
 	PMath::Vec3f minPt, maxPt;
 	minPt[0] =  1.0e6f; minPt[1] =  1.0e6f; minPt[2] =  1.0e6f;
 	maxPt[0] = -1.0e6f; maxPt[1] = -1.0e6f; maxPt[2] = -1.0e6f;
-	int i;
+	size_t i;
 	for (i = 0; i < m_IndexCount; ++i) {
 		int index = m_Indices[i];
 		if (m_pPositions[index*3    ] < minPt[0]) minPt[0] = m_pPositions[index*3    ];
@@ -153,6 +134,7 @@ void Mesh::CalcBoundingBox(Vec3f& center, Vec3f& extent)
 		center[i] = minPt[i] + extent[i]; 
 	}
 }
+
 
 
 } // end namespace GraphObj

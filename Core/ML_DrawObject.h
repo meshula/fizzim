@@ -44,12 +44,16 @@ public:
 		return mp_Material;
 	}
 
-	void GetPosition(PMath::Vec3f& pos) {
+	void GetLocalOrigin(PMath::Vec3f& pos) {
 		PMath::Vec3fSet(pos, m_Center);
 	}
 
 	void GetWorldPosition(PMath::Vec3f& pos) {
 		PMath::Mat44Transform(pos, m_LocalToWorld, m_Center);
+	}
+
+	void SetWorldPosition(PMath::Vec3f& pos) {
+		for (int i = 0; i < 3; ++i) { m_LocalToWorld[12 + i] = pos[i]; }
 	}
 
 	void GetLocalToWorld(float*const pMatrix) {
@@ -138,6 +142,7 @@ public:
 	void SetMesh(GraphObj::Mesh* pMesh) { mp_Mesh = pMesh; CalcBoundingBox(); }
 
 	void CreateFromOBJFile(char const*const pFilename);
+	void CreateFromNDOFile(char const*const pFilename);
 
 private:
 	GraphObj::Mesh* mp_Mesh;

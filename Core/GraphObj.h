@@ -82,7 +82,7 @@ public:
 
 	void CalcBoundingBox(PMath::Vec3f& center, PMath::Vec3f& extent);
 
-	int		m_IndexCount;
+	size_t  m_IndexCount;
 	float*	m_pNormals;			///< memory not owned by Mesh object
 	float*	m_pPositions;		///< memory not owned by Mesh object
 	uint16*	m_Indices;			///< memory not owned by Mesh object

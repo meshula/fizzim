@@ -121,6 +121,9 @@
 				RelativePath=".\ML_File.cpp">
 			</File>
 			<File
+				RelativePath=".\ModelReader_ReadNDO.cpp">
+			</File>
+			<File
 				RelativePath=".\ModelReader_ReadObj.cpp">
 			</File>
 			<File

@@ -3,6 +3,8 @@
 #include "ML_File.h"
 #include "ModelReader.h"
 
+#include <assert.h>
+
 void DrawMesh :: CreateFromOBJFile(char const*const pName) {
 	MeshulaLabs::File modelFile(pName);
 	ModelReader reader;
@@ -10,20 +12,65 @@ void DrawMesh :: CreateFromOBJFile(char const*const pName) {
 
 	GraphObj::Mesh* pRet = new GraphObj::Mesh();
 
-	int temp = (int) reader.normals.size();		
+	ModelReader::Model* pModel = reader.models[0];
+
+	ModelReader::VertexPool* pPool = reader.vertexPools[0];
+
+	int temp = (int) pPool->normals.size();		
+
 	pRet->m_pNormals = new float[temp];
-	memcpy(pRet->m_pNormals, &reader.normals[0], sizeof(float) * temp);
+	memcpy(pRet->m_pNormals, &pPool->normals[0], sizeof(float) * temp);
 
-	temp = (int) reader.vertices.size();
+	temp = (int) pPool->vertices.size();
 	pRet->m_pPositions = new float[temp];
-	memcpy(pRet->m_pPositions, &reader.vertices[0], sizeof(float) * temp);
+	memcpy(pRet->m_pPositions, &pPool->vertices[0], sizeof(float) * temp);
 
-	pRet->m_IndexCount = (int) reader.faceIndices.size();
-	pRet->m_Indices =	new uint16[reader.faceIndices.size()];
-	for (int i = 0; i < (int) reader.faceIndices.size(); ++i)
-		pRet->m_Indices[i] = reader.faceIndices[i];
+	size_t i;
+	size_t indices = 0;
+	for (i = 0; i < pModel->subModels.size(); ++i) {
+		indices += pModel->subModels[i]->faceIndices.size();
+	}
+
+	pRet->m_IndexCount = indices;
+	pRet->m_Indices =	new uint16[indices];
+
+	size_t currIndex = 0;
+
+	// consolidate indices of all submodels into one model
+	for (i = 0; i < pModel->subModels.size(); ++i)
+		for (size_t j = 0; j < pModel->subModels[i]->faceIndices.size(); ++j)
+			pRet->m_Indices[currIndex++] = pModel->subModels[i]->faceIndices[j];
 
 	SetMesh(pRet);
+}
+
+void DrawMesh :: CreateFromNDOFile(char const*const pName) {
+	assert(false); // NDO not currently supported
+
+#if 0
+	MeshulaLabs::File modelFile(pName);
+	ModelReader reader;
+	reader.ReadNDO((const unsigned char*) modelFile.GetContents(), modelFile.GetLength());
+
+	GraphObj::Mesh* pRet = new GraphObj::Mesh();
+
+	ModelReader::Model* pModel = reader.models[0];
+
+	int temp = (int) pModel->normals.size();		
+	pRet->m_pNormals = new float[temp];
+	memcpy(pRet->m_pNormals, &pModel->normals[0], sizeof(float) * temp);
+
+	temp = (int) pModel->vertices.size();
+	pRet->m_pPositions = new float[temp];
+	memcpy(pRet->m_pPositions, &pModel->vertices[0], sizeof(float) * temp);
+
+	pRet->m_IndexCount = (int) pModel->faceIndices.size();
+	pRet->m_Indices =	new uint16[pModel->faceIndices.size()];
+	for (int i = 0; i < (int) pModel->faceIndices.size(); ++i)
+		pRet->m_Indices[i] = pModel->faceIndices[i];
+
+	SetMesh(pRet);
+#endif
 }
 
 void DrawObject :: DrawBoundingBox() {

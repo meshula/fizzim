@@ -73,14 +73,14 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="$(ProjectDir)\..\Core;$(ProjectDir)\source;$(ProjectDir)\include;&quot;C:\Coding\SDL-1.2.5\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\Core&quot;;&quot;$(ProjectDir)\source&quot;;&quot;$(ProjectDir)\include&quot;;&quot;C:\Coding\SDL-1.2.5\include&quot;;C:\Coding\Fizzim\Opcode"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="TRUE"
 				RuntimeLibrary="4"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
+				Detect64BitPortabilityProblems="FALSE"
 				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
@@ -139,6 +139,9 @@
 			Filter="">
 			<File
 				RelativePath="..\Core\application.h">
+			</File>
+			<File
+				RelativePath=".\Demo\PhysicsDemo.h">
 			</File>
 			<File
 				RelativePath=".\include\PhysicsEngine.h">

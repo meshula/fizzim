@@ -74,6 +74,12 @@ Clock::Clock (void)
     // is simulation running or paused?
     paused = false;
 
+	// the desired rate of frames per second,
+	// or zero to mean "as fast as possible"
+	targetFPS = 0;
+	// targetFPS = 30;
+	// targetFPS = 24;
+
     // real "wall clock" time since launch
     totalRealTime = 0;
 
@@ -99,23 +105,34 @@ Clock::Clock (void)
     // "manually" advance clock by this amount on next update
     newAdvanceTime = 0;
 
-    // "Calendar time" in seconds and microseconds (obtained from
-    // the OS by gettimeofday) when this clock was first updated
-    baseRealTimeSec = 0;
+    // "Calendar time" when this clock was first updated
+#ifdef _WIN32
+    basePerformanceCounter = 0;  // from QueryPerformanceCounter on Windows
+#else
+    baseRealTimeSec = 0;         // from gettimeofday on Linux and Mac OS X
     baseRealTimeUsec = 0;
+#endif
 }
 
 
 // ----------------------------------------------------------------------------
-// update this clock, called once per simulation step ("frame")
+// update this clock, called once per simulation step ("frame") to:
+//
+//     track passage of real time
+//     manage passage of simulation time (modified by Paused state)
+//     measure time elapsed between time updates ("frame rate")
+//     optionally: "wait" for next realtime frame boundary
 
-void Clock::Update (void)
+void Clock::update (void)
 {
+   // wait for next frame time (when required (when targetFPS>0))
+    frameRateSync ();
+
 	// save previous real time to measure elapsed time
     const TimeVal previousRealTime = totalRealTime;
 
     // real "wall clock" time since this application was launched
-    totalRealTime = RealTimeSinceFirstClockUpdate ();
+    totalRealTime = realTimeSinceFirstClockUpdate ();
 
     // time since last clock update
     elapsedRealTime = totalRealTime - previousRealTime;
@@ -146,10 +163,37 @@ void Clock::Update (void)
 }
 
 // ----------------------------------------------------------------------------
+// "wait" until next frame time (actually spin around this tight loop)
+//
+//
+// (xxx there are probably a smarter ways to do this (using events or
+// thread waits (eg usleep)) but they are likely to be unportable. xxx)
+
+
+void Clock::frameRateSync (void)
+{
+    // when we are have a fixed target update rate (vs as-fast-as-possible)
+    if (targetFPS > 0)
+    {
+        // find next (real time) frame start time
+        const TimeVal targetStepSize = 1.0f / targetFPS;
+        const TimeVal now = realTimeSinceFirstClockUpdate ();
+        const int lastFrameCount = (int) (now / targetStepSize);
+        const TimeVal nextFrameTime = (lastFrameCount + 1) * targetStepSize;
+
+        // record usage ("busy time", "non-wait time") for SteerTest app
+        elapsedNonWaitRealTime = now - totalRealTime;
+
+        // wait until next frame time
+        do {} while (realTimeSinceFirstClockUpdate () < nextFrameTime); 
+    }
+}
+
+// ----------------------------------------------------------------------------
 // ("manually") force simulation time ahead, unrelated to the passage of
 // real time, currently used only for SteerTest's "single step forward"
 
-void Clock::AdvanceSimulationTime (const TimeVal seconds)
+void Clock::advanceSimulationTime (const float seconds)
 {
 	if (seconds > 0) {
 		newAdvanceTime += seconds;
@@ -162,100 +206,49 @@ void Clock::AdvanceSimulationTime (const TimeVal seconds)
 // the clock was first updated.
 //
 // XXX Need to revisit conditionalization on operating system.
-//
-// XXX as of 5-5-03: two versions, one for Linux/Unix (by Craig Reynolds) and
-// XXX one for Windows (by Leaf Garland).  As Leaf's comment suggests, the
-// XXX original version of this function mirrored the Linux/Unix clock model.
-// XXX This should be redesigned to be more agnostic to operating system.
-
-
-
-// original version:
-//
-// float Clock::realTimeSinceFirstClockUpdate (void)
-// {
-//     timeval t;
-//     if (gettimeofday (&t, 0) != 0)
-//     {
-//         SteerTest::errorExit ("Problem reading system clock.\n");
-//         return (0);  // won't be reached, but prevents compiler warning
-//     }
-//     else
-//     {
-//         // ensure the base time is recorded once after launch
-//         if (baseRealTimeSec == 0)
-//         {
-//             baseRealTimeSec = t.tv_sec;
-//             baseRealTimeUsec = t.tv_usec;
-//         }
-
-//         // real "wall clock" time since launch
-//         return (( t.tv_sec  - baseRealTimeSec) +
-//                 ((t.tv_usec - baseRealTimeUsec) / 1000000.0f));
-//     }
-// }
 
 void clockErrorExit (void)
 {
 	/// @todo - deal with error here
 }
 
-
-TimeVal Clock::RealTimeSinceFirstClockUpdate ()
+TimeVal Clock::realTimeSinceFirstClockUpdate ()
 #ifdef _WIN32
 {
-    LONGLONG time, freq;
-    if (QueryPerformanceCounter((LARGE_INTEGER *)&time))
-    {
-        if (QueryPerformanceFrequency((LARGE_INTEGER *)&freq))
-        {
-			totalRealTime = (double)time / (double)freq;
-			return totalRealTime;
+    // get time from Windows
+    LONGLONG counter, frequency;
+    bool clockOK = (QueryPerformanceCounter ((LARGE_INTEGER *)&counter)  &&
+                    QueryPerformanceFrequency ((LARGE_INTEGER *)&frequency));
+	if (!clockOK) {
+		clockErrorExit ();
+		return 0;
+	}
 
-			/*
-            // This is complicated by trying to stick with the original
-            // method of storing time as two integers instead of a float.
-            int sec = (int)dtime;
-            int usec = (int) ((dtime - sec) * 1000000);
-			
-            if (baseRealTimeSec == 0)
-            {
-                baseRealTimeSec = sec;
-                baseRealTimeUsec = usec;
-            }
-            // real "wall clock" time since launch
-            return (( sec  - baseRealTimeSec) +
-                    ((usec - baseRealTimeUsec) / 1000000.0f));*/
-        }
-        clockErrorExit ();
-        return 0.0f;
-    }
-    clockErrorExit ();
-    return 0.0f;
+    // ensure the base counter is recorded once after launch
+    if (basePerformanceCounter == 0) basePerformanceCounter = counter;
+
+    // real "wall clock" time since launch
+    const LONGLONG counterDifference = counter - basePerformanceCounter;
+    return ((float) counterDifference) / ((float)frequency);
 }
 #else
 {
+    // get time from Linux (Unix, Mac OS X, ...)
     timeval t;
-    if (gettimeofday (&t, 0) != 0)
-    {
-        clockErrorExit ();
-        return (0);  // won't be reached, but avoids compiler warning
-    }
-    else
-    {
-        // ensure the base time is recorded once after launch
-        if (baseRealTimeSec == 0)
-        {
-            baseRealTimeSec = t.tv_sec;
-            baseRealTimeUsec = t.tv_usec;
-        }
+    if (gettimeofday (&t, 0) != 0) return clockErrorExit ();
 
-        // real "wall clock" time since launch
-        return (( t.tv_sec  - baseRealTimeSec) +
-                ((t.tv_usec - baseRealTimeUsec) / 1000000.0f));
+    // ensure the base time is recorded once after launch
+    if (baseRealTimeSec == 0)
+    {
+        baseRealTimeSec = t.tv_sec;
+        baseRealTimeUsec = t.tv_usec;
     }
+
+    // real "wall clock" time since launch
+    return (( t.tv_sec  - baseRealTimeSec) +
+            ((t.tv_usec - baseRealTimeUsec) / 1000000.0f));
+
 }
 #endif
-
 
 // ----------------------------------------------------------------------------

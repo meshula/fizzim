@@ -73,9 +73,9 @@ typedef float			Real;
 
 namespace PMath {
 	typedef Real Vec2f[2];
-	typedef Real Vec3f[3];			//!< A 3 float vector; SIMD implementation would need 4 components
-	typedef Real Quaternion[4];		//!< Stored as x, y, z, w
-	typedef Real Mat44[16];			//!< stored in column major format (like OpenGL)
+	typedef Real Vec3f[3];			///< A 3 float vector; SIMD implementation would need 4 components
+	typedef Real Quaternion[4];		///< Stored as x, y, z, w
+	typedef Real Mat44[16];			///< stored in column major format (like OpenGL)
 
 	inline Real randf() {
 		Real retval = (Real) (rand() & 0x7fff);
@@ -99,108 +99,116 @@ namespace PMath {
 	template <class Type> Type Min(Type a, Type b)								{ return (a < b) ? a : b; }
 	template <class Type> Type Max(Type a, Type b)								{ return (a > b) ? a : b; }
 
-	//! Square a real number
+	/// Square a real number
 	inline	Real Sqr(Real a)													{ return a * a; }
 
-	//! Square root
+	/// Square root
 	inline	Real Sqrt(Real a)													{ return sqrtf(a); }
 
-	//! Absolute value
+	/// Absolute value
 	inline	Real Abs(Real a)													{ return (a > 0) ? a : -a; }
 
-	//! Reciprocal square root
+	/// Reciprocal square root
 	inline	Real RecipSqrt(Real a)												{ return (k1 / sqrtf(a)); }
 
-	//! compare one vector to another
+	/// compare one vector to another
 	inline	bool Vec3fEqual(const Vec3f a, const Vec3f b, Real eps)				{ return (Abs(a[0]-b[0]) + Abs(a[1]-b[1]) + Abs(a[2]-b[2])) < eps; } 
 
-	//! Copy one vector into another
+	/// Copy one vector into another
 	inline	void Vec2fSet(Vec2f& a, const Vec2f b)								{ a[0] = b[0]; a[1] = b[1]; }
 
-	//! Copy one vector into another
+	/// Copy one vector into another
 	inline	void Vec3fSet(Vec3f& a, const Vec3f b)								{ a[0] = b[0]; a[1] = b[1]; a[2] = b[2]; }
 
-	//! return inner product of two vectors
+	/// return inner product of two vectors
 	inline	Real Vec2fDot(const Vec2f a, const Vec2f b)							{ return a[0] * b[0] + a[1] * b[1]; }
 
-	//! return inner product of two vectors
+	/// return inner product of two vectors
 	inline	Real Vec3fDot(const Vec3f a, const Vec3f b)							{ return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
 
-	//! Zero a vector
+	/// Zero a vector
 	inline	void Vec3fZero(Vec3f& a)											{ a[0] = Real(0.0f); a[1] = Real(0.0f); a[2] = Real(0.0f); }
 
-	//! Return true if vector is zero
+	/// Return true if vector is zero
 	inline bool Vec3fIsZero(const Vec3f a)										{ return Vec3fDot(a, a) <= kEps; }
 
-	//! Get length of vector
+	/// Get length of vector
 	inline	Real Vec2fLength(const Vec2f a)										{ return Sqrt(a[0]*a[0] + a[1]*a[1]); }
 
-	//! Get length of vector
+	/// Get length of vector
 	inline	Real Vec3fLength(const Vec3f a)										{ return Sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]); }
 
-	//! Normalize a vector
+	/// Normalize a vector
 			void Vec2fNormalize(Vec2f& result, const Vec2f source);
 
-	//! Normalize a vector
+	/// Normalize a vector
 			void Vec3fNormalize(Vec3f& result, const Vec3f source);
 
-	//! Add two vectors
+	/// Add two vectors
 	inline	void Vec3fAdd(Vec3f& a, const Vec3f b)								{ a[0] += b[0]; a[1] += b[1]; a[2] += b[2]; }
 
-	//! Add two vectors
+	/// Add two vectors
 	inline	void Vec3fAdd(Vec3f& result, const Vec3f a, const Vec3f b)			{ result[0] = a[0]+b[0]; result[1] = a[1]+b[1]; result[2] = a[2]+b[2]; }
 
-	//! Subtract two vectors
+	/// Subtract two vectors
 	inline	void Vec2fSubtract(Vec2f& a, const Vec2f b)							{ a[0] -= b[0]; a[1] -= b[1]; }
 
-	//! Subtract two vectors
+	/// Subtract two vectors
 	inline	void Vec3fSubtract(Vec3f& a, const Vec3f b)							{ a[0] -= b[0]; a[1] -= b[1]; a[2] -= b[2]; }
 
-	//! Subtract two vectors
+	/// Subtract two vectors
 	inline	void Vec3fSubtract(Vec3f& result, const Vec3f a, const Vec3f b)		{ result[0] = a[0]-b[0]; result[1] = a[1]-b[1]; result[2] = a[2]-b[2]; }
 
 	inline	Real Vec3fDistance(const Vec3f a, const Vec3f b)					{ Vec3f temp; Vec3fSubtract(temp, a, b); return Vec3fLength(temp); }
 
-	//! Multiply and accumulate two vectors
+	/// Multiply and accumulate two vectors
 	inline	void Vec3fMultiplyAccumulate(Vec3f& a, Real scale, const Vec3f b)	{ a[0] += scale * b[0]; a[1] += scale * b[1]; a[2] += scale * b[2]; }
 
 	/// linearly interpolate between a and b
 	inline	void Vec3fLerp(Vec3f& result, Real t, const Vec3f a, const Vec3f b)	{ result[0] = t * a[0] + (k1-t) * b[0]; result[1] = t * a[1] + (k1-t) * b[1]; result[2] = t * a[2] + (k1-t) * b[2]; }
 
-	//! Multiply two vectors, element-wise
+	/// Multiply two vectors, element-wise
 	inline	void Vec3fMultiply(Vec3f&a, const Vec3f b, const Vec3f c)			{ a[0] = b[0] * c[0]; a[1] = b[1] * c[1]; a[2] = b[2] * c[2]; }
 
-	//! calculate outer product of two vectors
+	/// calculate outer product of two vectors
 	inline	void Vec3fCross(Vec3f& result, const Vec3f a, const Vec3f b)		{ result[0] = a[1]*b[2] - a[2]*b[1]; result[1] = a[2]*b[0] - a[0]*b[2]; result[2] = a[0]*b[1] - a[1]*b[0]; }
 
-	//! negate a vector in place
+	/// negate a vector in place
 	inline  void Vec3fNegate(Vec3f& a)											{ a[0] *= kN1; a[1] *= kN1; a[2] *= kN1; }
 
 	inline	void Vec2fScale(Vec2f& a, Real scale)								{ a[0] *= scale; a[1] *= scale; }
 	inline	void Vec3fScale(Vec3f& a, Real scale)								{ a[0] *= scale; a[1] *= scale; a[2] *= scale; }
+	inline	void Vec3fScale(Vec3f& a, const Vec3f b, Real scale)					{ a[0] = b[0] * scale; a[1] = b[1] * scale; a[2] = b[2] * scale; }
 
-	//! Set a vector to a scale copy of the other
+	/// Set a vector to a scale copy of the other
 	inline	void Vec3fSetScaled(Vec3f& a, Real scale, const Vec3f b)			{ a[0] = scale * b[0]; a[1] = scale * b[1]; a[2] = scale * b[2]; }
 
-	//! Create a basis matrix from a quaternion. Only sets upper left 3x3 portion
+	/// Set a vector to copy of another vector and setting a particular length
+	inline	void Vec3fSetLength(Vec3f& a, const Vec3f b, Real length)
+	{
+		Real scale = length / Vec3fLength(a);
+		a[0] *= scale; a[1] *= scale; a[2] *= scale;
+	}
+
+	/// Create a basis matrix from a quaternion. Only sets upper left 3x3 portion
 			void QuatToBasis(Mat44& pResult, const Quaternion a);
 
-	//! Copy one quaternion to another
+	/// Copy one quaternion to another
 	inline	void QuatSet(Quaternion& a, const Quaternion b)						{ a[0] = b[0]; a[1] = b[1]; a[2] = b[2]; a[3] = b[3]; }
 
-	//! Set the first 3 elements of the translation column of a matrix
+	/// Set the first 3 elements of the translation column of a matrix
 	inline	void Mat44SetTranslation(Mat44& pResult, const Vec3f a)				{ pResult[12] = a[0]; pResult[13] = a[1]; pResult[14] = a[2]; }
 
-	//! Set a matrix to identity
+	/// Set a matrix to identity
 	inline	void Mat44Identity(Mat44& pResult)									{ for (int i = 1; i < 15; ++i) pResult[i] = k0; 	pResult[0] = pResult[5] = pResult[10] = pResult[15] = k1; }
 
-	//! Update a quaternion's orientation with an angular velocity
+	/// Update a quaternion's orientation with an angular velocity
 			void QuatInputAngularVelocity(Quaternion& result, Real dt, const Vec3f a);
 
-	//! Normalize a quaternion
+	/// Normalize a quaternion
 			void QuatNormalize(Quaternion& result, const Quaternion source);
 
-	//! Multiply two quaternions together
+	/// Multiply two quaternions together
 	inline 	void QuatMultiply(Quaternion& result, const Quaternion a, const Quaternion b) {
 		Real ax = a[0]; Real ay = a[1]; Real az = a[2]; Real aw = a[3];
 		Real bx = b[0]; Real by = b[1]; Real bz = b[2]; Real bw = b[3];
@@ -247,8 +255,8 @@ namespace PMath {
 			return m_D + Vec3fDot(m_Normal, a);
 		}
 
-		Vec3f	m_Normal;		//!< plane normal
-		Real	m_D;			//!< distance of plane from origin, D = -(point dot normal)
+		Vec3f	m_Normal;		///< plane normal
+		Real	m_D;			///< distance of plane from origin, D = -(point dot normal)
 	};
 }
 

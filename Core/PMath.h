@@ -153,7 +153,7 @@ namespace PMath {
 
 	/// Add two vectors
 	inline	void Vec3fAdd(Vec3f& result, const Vec3f a, const Vec3f b)			{ result[0] = a[0]+b[0]; result[1] = a[1]+b[1]; result[2] = a[2]+b[2]; }
-
+			void Vec3fPointOnUnitSphere (Vec3f& v, const Vec3f p, const Vec3f cueCenter, Real cueRadius);
 	/// Subtract two vectors
 	inline	void Vec2fSubtract(Vec2f& a, const Vec2f b)							{ a[0] -= b[0]; a[1] -= b[1]; }
 
@@ -201,12 +201,35 @@ namespace PMath {
 	inline	void QuatSet(Quaternion& a, const Quaternion b)						{ a[0] = b[0]; a[1] = b[1]; a[2] = b[2]; a[3] = b[3]; }
 
 			void QuatFromEuler(Quaternion& a, Real roll, Real pitch, Real yaw);
+	
+	inline	void Mat44Set(Mat44& pResult, float* pMatrix)						{ for (int i = 0; i < 16; ++i) { pResult[i] = pMatrix[i]; } }
+
 
 	/// Set the first 3 elements of the translation column of a matrix
 	inline	void Mat44SetTranslation(Mat44& pResult, const Vec3f a)				{ pResult[12] = a[0]; pResult[13] = a[1]; pResult[14] = a[2]; }
 
 	/// Set a matrix to identity
 	inline	void Mat44Identity(Mat44& pResult)									{ for (int i = 1; i < 15; ++i) pResult[i] = k0; 	pResult[0] = pResult[5] = pResult[10] = pResult[15] = k1; }
+
+	inline	void Mat44LoadTransposed(Mat44& pResult, const Vec3f x, const Vec3f y, const Vec3f z) {
+		pResult[0] = x[0]; pResult[4] = x[1]; pResult[8] = x[2];
+		pResult[1] = y[0]; pResult[5] = y[1]; pResult[9] = y[2];
+		pResult[2] = z[0]; pResult[6] = z[1]; pResult[10] = z[2];
+	}
+
+	inline	void Mat44Transform(Vec3f& pResult, const Mat44& pMatrix, const Vec3f a) {
+		Vec3f temp;
+		Vec3fSet(temp, a);
+		pResult[0] = temp[0] * pMatrix[0] + temp[1] * pMatrix[4] + temp[2] * pMatrix[8];
+		pResult[1] = temp[0] * pMatrix[1] + temp[1] * pMatrix[5] + temp[2] * pMatrix[9];
+		pResult[2] = temp[0] * pMatrix[2] + temp[1] * pMatrix[6] + temp[2] * pMatrix[10];
+	}
+
+			void Mat44SetRotateVectorToVector (Mat44& result, const Vec3f theop, const Vec3f theoq);			void Mat44Rotate(Mat44& result, const Mat44 src, const Vec3f args);
+			void Mat44TrackBall(Mat44& result, const Vec3f p, const Vec3f q, const Vec3f cueCenter, Real cueRadius);
+
+/* mat44 multiply
+			for( i = 0; i < 4; i++ )			{				for( j = 0; j < 4; j++ )				{					tmp = kZero;					for( k = 0; k < 4; k++ )					{						//tmp += mat1[i][k] * mat2[k][j];						tmp += mat1.m_Array[i*4 + k] * mat2.m_Array[k*4 + j];					}					result.m_Array[i*4 + j] = tmp;				}			}*/
 
 	/// Update a quaternion's orientation with an angular velocity
 			void QuatInputAngularVelocity(Quaternion& result, Real dt, const Quaternion input, const Vec3f velocity);

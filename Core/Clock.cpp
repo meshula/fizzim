@@ -209,10 +209,13 @@ TimeVal Clock::RealTimeSinceFirstClockUpdate ()
     {
         if (QueryPerformanceFrequency((LARGE_INTEGER *)&freq))
         {
+			totalRealTime = (double)time / (double)freq;
+			return totalRealTime;
+
+			/*
             // This is complicated by trying to stick with the original
             // method of storing time as two integers instead of a float.
-			totalRealTime = (double)time / (double)freq;
-/*            int sec = (int)dtime;
+            int sec = (int)dtime;
             int usec = (int) ((dtime - sec) * 1000000);
 			
             if (baseRealTimeSec == 0)
@@ -223,7 +226,6 @@ TimeVal Clock::RealTimeSinceFirstClockUpdate ()
             // real "wall clock" time since launch
             return (( sec  - baseRealTimeSec) +
                     ((usec - baseRealTimeUsec) / 1000000.0f));*/
-			return totalRealTime;
         }
         clockErrorExit ();
         return 0.0f;

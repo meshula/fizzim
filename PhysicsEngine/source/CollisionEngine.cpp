@@ -309,7 +309,7 @@ void _ResolveSphereVsPlane(Contact* pContact)
 	Vec3f contact;
 	Collision::Sphere* pCSphere = (Collision::Sphere*) pSphere->m_pCollideGeo;
 	Vec3fSetScaled(contact, -pCSphere->m_Radius, pContact->m_Normal);
-	
+
 	Vec3f velocityA;
 	Vec3fSet(velocityA, pSphere->m_StateT1.m_Velocity);
 
@@ -357,13 +357,14 @@ void _ResolveSphereVsPlane(Contact* pContact)
 		Real result = (pSphere->GetOOMass() * impulseNumerator) / impulseDenominator;
 		Vec3fSetScaled(impulse, (Real) result, pContact->m_Normal);
 		Vec3fAdd(pSphere->m_StateT1.m_Velocity, impulse);
-		
-		// calculate angular impulse
-		// final angular momentum = init ang vel + (collision point DOT impulse * normal) / inertia tensor
-		Vec3fCross(temp2, pContact->m_Normal, impulse);
-		Vec3fAdd(pSphere->m_StateT1.m_AngularMomentum, temp2);
 
-		// angular velocity will be recalculate on next time step
+		if (pSphere->GetSpinnable()) {
+			// calculate angular impulse
+			// final angular momentum = init ang vel + (collision point DOT impulse * normal) / inertia tensor
+			Vec3fCross(temp2, contact, impulse);
+			Vec3fSubtract(pSphere->m_StateT1.m_AngularMomentum, temp2);			/// @todo subtract or add?
+			// angular velocity will be recalculate on next time step
+		}
 	}
 }
 
@@ -403,8 +404,8 @@ void Resolve_Sphere___Sphere(Contact* pContact)
 	RigidBody* pBodyA = pContact->m_pBodyA;
 	RigidBody* pBodyB = pContact->m_pBodyB;
 
-	Vec3f temp,		temp2;
-	Vec3f contactA,	contactB;
+	Vec3f temp,			temp2;
+	Vec3f contactA,		contactB;
 	Vec3f velocityA,	velocityB, velocityAB;
 
 	// calculate point of contact on body A and Vec3fAdd in angular contribution
@@ -454,7 +455,7 @@ void Resolve_Sphere___Sphere(Contact* pContact)
 		
 		Real denTerm1 = pBodyA->GetOOMass() + pBodyB->GetOOMass();
 		Vec3f temp3;
-		Vec3fScale(temp3, pContact->m_Normal, denTerm1);
+		Vec3fScale(temp3, denTerm1, pContact->m_Normal);
 		denTerm1 = Vec3fDot(pContact->m_Normal, temp3);						// n dot n(mAInv + mBInv)
 
 		Vec3fCross(temp, contactB, pContact->m_Normal);
@@ -470,22 +471,6 @@ void Resolve_Sphere___Sphere(Contact* pContact)
 		denTerm1 += Vec3fDot(temp3, pContact->m_Normal);
 		Real result = impulseNumerator / denTerm1;
 
-/*		Real impulseDenominator = pBodyA->GetOOMass() + pBodyB->GetOOMass() + Vec3fDot(temp2, pContact->m_Normal) ;
-		
-		if (pBodyB->GetInertialKind() == Physics::kI_Sphere) {
-			Vec3fScale(temp, pBodyB->m_InertiaITD[0]);
-		}
-		else {
-			Vec3fMultiply(temp, temp, pBodyB->m_InertiaITD);
-		}
-
-		Vec3fCross(temp2, temp, contactB);
-		impulseDenominator += Vec3fDot(temp2, pContact->m_Normal);
-		
-		// final velocity = initial velocity + (impulse / mass) * normal
-		Real result = (pBodyA->GetOOMass() * impulseNumerator) / impulseDenominator;
-*/
-
 		Vec3f impulse;
 		Vec3fSetScaled(impulse, (Real) result, pContact->m_Normal);
 		Vec3fMultiplyAccumulate(pBodyA->m_StateT1.m_Velocity, pBodyA->GetOOMass(), impulse);
@@ -497,9 +482,13 @@ void Resolve_Sphere___Sphere(Contact* pContact)
 
 		// calculate angular impulse
 		// final angular momentum = init ang vel + (collision point DOT impulse * normal) / inertia tensor
-		Vec3fCross(temp2, pContact->m_Normal, impulse);
+
+		Vec3fSubtract(temp, pBodyA->m_StateT1.m_Position, contactA);
+		Vec3fCross(temp2, temp, impulse);
 		Vec3fAdd(pBodyA->m_StateT1.m_AngularMomentum, temp2);
-		Vec3fScale(temp2, kN1);
+
+		Vec3fSubtract(temp, pBodyB->m_StateT1.m_Position, contactB);
+		Vec3fCross(temp2, temp, impulse);
 		Vec3fAdd(pBodyB->m_StateT1.m_AngularMomentum, temp2);
 
 		// angular velocity will be recalculated on next time step

@@ -73,6 +73,8 @@ public:
 	     measure time elapsed between time updates ("frame rate") */
     void update ();
 
+	void reset();
+
     /// returns the number of seconds of real time (represented as a float)
     /// since the clock was first updated.
     TimeVal realTimeSinceFirstClockUpdate ();
@@ -85,7 +87,7 @@ public:
 
 	/// set and get the pause condition
 	void setPausedState (bool val) { paused = val; }
-	bool getPausedState (bool val) const { return paused; }
+	bool getPausedState () const { return paused; }
 
     /// "manually" force simulation time ahead, unrelated to the passage of
     /// real time.

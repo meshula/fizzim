@@ -80,7 +80,12 @@ Clock::Clock (void)
 	// targetFPS = 30;
 	// targetFPS = 24;
 
-    // real "wall clock" time since launch
+	reset();
+ }
+
+void Clock::reset()
+{
+   // real "wall clock" time since launch
     totalRealTime = 0;
 
     // time simulation has run
@@ -113,7 +118,6 @@ Clock::Clock (void)
     baseRealTimeUsec = 0;
 #endif
 }
-
 
 // ----------------------------------------------------------------------------
 // update this clock, called once per simulation step ("frame") to:

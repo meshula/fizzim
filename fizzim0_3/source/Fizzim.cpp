@@ -28,10 +28,16 @@ public:
 	{
 	}
 
-	void Render()
+	void Render(FILE* outFile)
 	{
-		printf("box %ld, text %ld, arc %ld, from %ld, to %ld\n", 
-			m_BoxID, m_TextID, m_ArcID, m_From, m_To);
+		if (m_BoxID != -1)
+		{
+			fprintf(outFile, "box %ld, text %ld\n", m_BoxID, m_TextID);
+		}
+		else if (m_ArcID != -1)
+		{
+			fprintf(outFile, "arc %ld, text %ld from %ld to %ld\n", m_ArcID, m_TextID, m_From, m_To);
+		}
 	}
 
 	int16 m_BoxID;
@@ -48,7 +54,8 @@ public:
 static std::vector<Group*> s_Groups;
 
 static Group* s_pCurrGroup = 0;
-static bool s_PushbackOnObject = false;
+
+static int groupNest = 0;
 
 static void start(void *data, const char *el, const char **attr) 
 {
@@ -58,8 +65,7 @@ static void start(void *data, const char *el, const char **attr)
 		if (s_pCurrGroup)
 			printf("Error - nested groups not yet supported\n");
 
-		s_pCurrGroup = new Group;
-		s_PushbackOnObject = false;
+		++groupNest;
 	}
 
 	// else parse object and its attributes
@@ -68,8 +74,7 @@ static void start(void *data, const char *el, const char **attr)
 	{
 		if (!s_pCurrGroup)
 		{
-			s_PushbackOnObject = true;
-			s_pCurrGroup = new Group;
+			s_pCurrGroup = new Group();
 		}
 
 		int16 kind = -1;
@@ -153,16 +158,62 @@ static void end(void *data, const char *el)
 {
 	if (s_pCurrGroup)
 	{
-		if (((!s_PushbackOnObject) && !strcmp(el, "dia:group")) ||
-			((s_PushbackOnObject && !strcmp(el, "dia:object"))))
+		// terminating a group?
+		if (!strcmp(el, "dia:group"))
 		{
-			s_Groups.push_back(s_pCurrGroup);
-			s_pCurrGroup = 0;
+			--groupNest;
+
+			// if completely denested...
+			if (!groupNest)
+			{
+				s_Groups.push_back(s_pCurrGroup);
+				s_pCurrGroup = 0;
+			}
+		}
+
+		// terminating an object?
+		else if (!strcmp(el, "dia:object"))
+		{
+			// if not grouped, push back the current group
+			if (0 == groupNest)
+			{
+				s_Groups.push_back(s_pCurrGroup);
+				s_pCurrGroup = 0;
+			}
 		}
 	}
 
 	Depth--;
 }  /* End of end handler */
+
+
+static void FizzimCharacterDataHandler(void *userData, const XML_Char *s, int len)
+{
+	if (s_pCurrGroup && s[0] == '#')
+	{
+		char buff[2048];
+		strncpy(buff, s, len);
+		buff[len] = '\0';
+
+		if (s[len-1] != '#')
+		{
+			printf("Error - Found whitespace in name. %s", buff);
+		}
+
+		if (s_pCurrGroup->m_ArcID != -1)
+		{
+			printf("Arc: textid:%ld %s\n", s_pCurrGroup->m_TextID, buff);
+		}
+		else if (s_pCurrGroup->m_BoxID != -1)
+		{
+			printf("Node: textid:%ld %s\n", s_pCurrGroup->m_TextID, buff);
+		}
+		else
+		{
+			printf("??? %s\n", buff);
+		}
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -195,6 +246,7 @@ int main(int argc, char* argv[])
 	}
 	
 	XML_SetElementHandler(p, start, end);
+	XML_SetCharacterDataHandler(p, FizzimCharacterDataHandler);
 	
 	bool done = false;
 
@@ -208,11 +260,17 @@ int main(int argc, char* argv[])
 	
 	fclose(outFile);
 
+	outFile = fopen("test.fsm", "wt");
+
+	fprintf(outFile, "nodes: \n");
+
 	printf("Found %ld groups\n", s_Groups.size());
 
 	int i;
 	for (i = 0; i < s_Groups.size(); ++i)
-		s_Groups[i]->Render();
+		s_Groups[i]->Render(outFile);
+
+	fclose(outFile);
 
 	// deallocate the groups
 	for (i = 0; i < s_Groups.size(); ++i)
@@ -220,5 +278,5 @@ int main(int argc, char* argv[])
 
 	delete [] buffer;
 
-  return 0;
+	return 0;
 }

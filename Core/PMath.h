@@ -36,7 +36,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 typedef unsigned short	uint16;
 typedef unsigned int	uint32;
-typedef float			Real;
+typedef float			Real;		///< changing this definition would adapt all of PMath to a different float representation
 
 // common constants
 
@@ -76,16 +76,19 @@ typedef float			Real;
 
 
 namespace PMath {
-	typedef Real Vec2f[2];
+	typedef Real Vec2f[2];			///< 2 component float vector
 	typedef Real Vec3f[3];			///< A 3 float vector; SIMD implementation would need 4 components
-	typedef Real Quaternion[4];		///< Stored as x, y, z, w
+	typedef Real Vec4f[4];			///< 4 component float vector
+	typedef Real Quaternion[4];		///< Stored as xi, yj, zk, w; w is the real component
 	typedef Real Mat44[16];			///< stored in column major format (like OpenGL)
 
+	/// return a random number between zero and one
 	inline Real randf() {
 		Real retval = (Real) (rand() & 0x7fff);
 		return retval * (1.0f / 32768.0f);
 	}
 
+	/// return a random number within the specified range (inclusive)
 	inline Real randf(Real minR, Real maxR) {
 		Real retval = randf() * (maxR - minR);
 		return retval + minR;
@@ -115,7 +118,10 @@ namespace PMath {
 	/// Reciprocal square root
 	inline	Real RecipSqrt(Real a)												{ return (k1 / sqrtf(a)); }
 
+	/// Sine
 	inline	Real Sin(Real a)													{ return sinf(a); }
+
+	/// cosine
 	inline	Real Cos(Real a)													{ return cosf(a); }
 
 	/// compare one vector to another
@@ -197,6 +203,10 @@ namespace PMath {
 		a[0] *= scale; a[1] *= scale; a[2] *= scale;
 	}
 
+			Real Vec3fDistancePointToSegment(const Vec3f point, const Vec3f point0, const Vec3f point1);
+
+	inline	Real Vec4fDot(const Vec4f a, const Vec4f b)							{ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2] + a[3]*b[3]; }
+
 	/// Create a basis matrix from a quaternion. Only sets upper left 3x3 portion
 			void QuatToBasis(Mat44& pResult, const Quaternion a);
 
@@ -218,6 +228,18 @@ namespace PMath {
 		pResult[0] = x[0]; pResult[4] = x[1]; pResult[8] = x[2];
 		pResult[1] = y[0]; pResult[5] = y[1]; pResult[9] = y[2];
 		pResult[2] = z[0]; pResult[6] = z[1]; pResult[10] = z[2];
+	}
+
+	inline void Mat44Scale3x3(Mat44& pResult, const Real scale) {
+		pResult[0] *= scale; pResult[1] *= scale; pResult[2 ] *= scale;
+		pResult[4] *= scale; pResult[5] *= scale; pResult[6 ] *= scale;
+		pResult[8] *= scale; pResult[9] *= scale; pResult[10] *= scale;
+	}
+
+	inline void Mat44Transpose3x3(Mat44& pResult)			{ 
+		Real temp = pResult[1]; pResult[1] = pResult[4]; pResult[4] = temp;
+		temp = pResult[2]; pResult[2] = pResult[8]; pResult[8] = temp;
+		temp = pResult[6]; pResult[6] = pResult[9]; pResult[9] = temp;
 	}
 
 	inline	void Mat44Transform3x3(Vec3f& pResult, const Mat44& pMatrix, const Vec3f a) {

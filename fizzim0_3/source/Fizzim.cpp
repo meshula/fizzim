@@ -16,6 +16,9 @@
 int Depth;
 
 FILE* outFile;
+class Group;
+static std::vector<Group*> s_Groups;
+static std::vector<char*> s_Strings;
 
 class Group
 {
@@ -32,11 +35,11 @@ public:
 	{
 		if (m_BoxID != -1)
 		{
-			fprintf(outFile, "box %ld, text %ld\n", m_BoxID, m_TextID);
+			fprintf(outFile, "box %ld, %s\n", m_BoxID, s_Strings[m_TextID]);
 		}
 		else if (m_ArcID != -1)
 		{
-			fprintf(outFile, "arc %ld, text %ld from %ld to %ld\n", m_ArcID, m_TextID, m_From, m_To);
+			fprintf(outFile, "arc %ld, %s from %ld to %ld\n", m_ArcID, s_Strings[m_TextID], m_From, m_To);
 		}
 	}
 
@@ -50,8 +53,6 @@ public:
 #define kBox 0
 #define kArc 1
 #define kText 2
-
-static std::vector<Group*> s_Groups;
 
 static Group* s_pCurrGroup = 0;
 
@@ -83,7 +84,11 @@ static void start(void *data, const char *el, const char **attr)
 		{
 			if (!strcmp(attr[i], "type"))
 			{
-				if (!strcmp(attr[i+1], "Standard - Box"))
+				if (!strcmp(attr[i+1], "UML - State"))
+				{
+					kind = kBox;
+				}
+				else if (!strcmp(attr[i+1], "Standard - Box"))
 				{
 					kind = kBox;
 				}
@@ -110,7 +115,10 @@ static void start(void *data, const char *el, const char **attr)
 		switch (kind)
 		{
 		case kBox:	s_pCurrGroup->m_BoxID = id; break;
-		case kText:	s_pCurrGroup->m_TextID = id; break;
+
+		// don't record text, text id's are actually the names
+		//case kText:	s_pCurrGroup->m_TextID = id; break;
+
 		case kArc:	s_pCurrGroup->m_ArcID = id; break;
 		}
 	}
@@ -192,26 +200,59 @@ static void FizzimCharacterDataHandler(void *userData, const XML_Char *s, int le
 	if (s_pCurrGroup && s[0] == '#')
 	{
 		char buff[2048];
-		strncpy(buff, s, len);
-		buff[len] = '\0';
+		strncpy(buff, s+1, len-1);
 
 		if (s[len-1] != '#')
 		{
 			printf("Error - Found whitespace in name. %s", buff);
 		}
+		else
+		{
+			buff[len-2] = '\0';	// discard the trailing #
+		}
 
 		if (s_pCurrGroup->m_ArcID != -1)
 		{
+			char* pString = new char[len+1];
+			strcpy(pString, buff);
+			s_pCurrGroup->m_TextID = s_Strings.size();
+			s_Strings.push_back(pString);
 			printf("Arc: textid:%ld %s\n", s_pCurrGroup->m_TextID, buff);
 		}
 		else if (s_pCurrGroup->m_BoxID != -1)
 		{
+			char* pString = new char[len+1];
+			strcpy(pString, buff);
+			s_pCurrGroup->m_TextID = s_Strings.size();
+			s_Strings.push_back(pString);
 			printf("Node: textid:%ld %s\n", s_pCurrGroup->m_TextID, buff);
 		}
 		else
 		{
 			printf("??? %s\n", buff);
 		}
+	}
+}
+
+void SanityCheck()
+{
+	// first, make sure one and only start node exists
+	int startNodes = 0;
+	
+	int i;
+	for (i = 0; i < s_Strings.size(); ++i)
+	{
+		if (!stricmp("start", s_Strings[i]))
+		{
+			++startNodes;
+		}
+	}
+
+	switch(startNodes)
+	{
+	case 0:		printf("Error: No start node found\n");	break;
+	case 1:												break;	// perfect
+	default:	printf("Error: More than one start node found\n"); break;
 	}
 }
 
@@ -259,6 +300,10 @@ int main(int argc, char* argv[])
 	}
 	
 	fclose(outFile);
+
+	// now sanity check the read-in data
+
+	SanityCheck();
 
 	outFile = fopen("test.fsm", "wt");
 

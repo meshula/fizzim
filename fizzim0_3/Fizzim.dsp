@@ -65,7 +65,7 @@ LINK32=link.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Yu"stdafx.h" /FD /GZ /c
-# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "include" /I "lib" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /Yc"stdafx.h" /FD /GZ /c
+# ADD CPP /nologo /W3 /Gm /GX /ZI /Od /I "include" /I "lib" /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /FR /Yc"stdafx.h" /FD /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -98,7 +98,15 @@ SOURCE=.\include\basictypes.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\Fizzim.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\source\StdAfx.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\StringTable.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"

@@ -3,6 +3,7 @@
 #define STRINGTABLE_H
 
 #include "CRC32.h"
+#include <vector>
 
 class StringTable
 {
@@ -35,6 +36,8 @@ public:
 		strcpy(pNewString, pString);
 
 		m_Strings.push_back(pNewString);
+
+		return m_Strings.size() - 1;
 	}
 
 	int32	Exists(char const*const pString)
@@ -50,6 +53,8 @@ public:
 
 		return -1;
 	}
+
+	char* operator[](int i) const { return m_Strings[i]; }
 
 	std::vector <uint32>	m_Hashes;
 	std::vector <char*>		m_Strings;

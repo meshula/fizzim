@@ -49,6 +49,13 @@ namespace Physics {
 		Engine();
 		~Engine();
 
+		/*
+                         ____            _ _
+                        | __ )  ___   __| (_) ___ ___
+                        |  _ \ / _ \ / _` | |/ _ Y __|
+                        | |_) | (_) | (_| | |  __|__ \
+                        |____/ \___/ \__,_|_|\___|___/
+		*/
 		//----------------------- Rigid Body Factory
 
 		/**
@@ -106,6 +113,17 @@ namespace Physics {
 
 		void				GetRigidBodyTransformMatrix	(uint32 id, PMath::Mat44& pResult);
 
+
+		/*
+                      ____             _
+                     / ___| _ __  _ __(_)_ __   __ _ ___
+                     \___ \| '_ \| '__| | '_ \ / _` / __|
+                      ___) | |_) | |  | | | | | (_| \__ \
+                     |____/| .__/|_|  |_|_| |_|\__, |___/
+                           |_|                 |___/
+		*/
+
+
 		//----------------------- Spring Factory
 
 		/// create and add a spring the system, and return the ID of the new spring
@@ -128,23 +146,62 @@ namespace Physics {
 		void 				SetSpringVec3f				(uint32 id, ESpringVector		prop,	PMath::Vec3f value);
 		PMath::Vec3f*		GetSpringVec3fPtr			(uint32 id, ESpringVector		prop);
 
+		/*
+               ____                _             _       _
+              / ___|___  _ __  ___| |_ _ __ __ _(_)_ __ | |_ ___
+             | |   / _ \| '_ \/ __| __| '__/ _` | | '_ \| __/ __|
+             | |__| (_) | | | \__ \ |_| | | (_| | | | | | |_\__ \
+              \____\___/|_| |_|___/\__|_|  \__,_|_|_| |_|\__|___/
+		*/
+
+		uint32				AddDistanceConstraint		(uint32 a, uint32 b, Real distance, Real tolerance);
+		bool				RemoveConstraint			(uint32 id);
+
+		enum EConstraintBool	{ propConstraintActive };
+		enum EConstraintScalar	{ propConstraintDistance };
+
+		void				SetConstraintBool			(uint32 id, EConstraintBool		prop, bool value);
+		bool				GetConstraintBool			(uint32 id, EConstraintBool		prop);
+		void				SetConstraintScalar			(uint32 id, EConstraintScalar	prop, Real value);
+		Real				GetConstraintScalar			(uint32 id, EConstraintScalar	prop);
+
+		/*
+                 ____                              _
+                |  _ \ _   _ _ __   __ _ _ __ ___ (_) ___ ___
+                | | | | | | | '_ \ / _` | '_ ` _ \| |/ __/ __|
+                | |_| | |_| | | | | (_| | | | | | | | (__\__ \
+                |____/ \__, |_| |_|\__,_|_| |_| |_|_|\___|___/
+                       |___/
+		*/
+
 		//----------------------- Force inputs during a frame
 
 		/// add an impulse (instantaneous force) to a particular body
-		void	AddImpulse	(uint32 id, PMath::Vec3f force);		
+		void				AddImpulse					(uint32 id, PMath::Vec3f force);		
 
 		/// simply stop an object in its tracks; doesn't stop spinning
-		void	StopMoving	(uint32 id);
-		
+		void				StopMoving					(uint32 id);
+				
 		//----------------------- Torque inputs during a frame
 
 		/// add twist (instantaneous torque) to a particular body
-		void	AddTwist	(uint32 id, PMath::Vec3f twist);	
-		void	AddTwist	(uint32 id, PMath::Vec3f force, PMath::Vec3f position);
+		void				AddTwist					(uint32 id, PMath::Vec3f twist);	
+		void				AddTwist					(uint32 id, PMath::Vec3f force, PMath::Vec3f position);
 
 		/// stop an object's rotation completely; doesn't stop motion
-		void	StopSpinning(uint32 id);
+		void				StopSpinning				(uint32 id);
 
+		/// Set the gravity vector that applies to all bodies, if body's gravity flag is true
+		void				SetGravity					(PMath::Vec3f val);
+
+
+		/*
+               ____  _                 _       _   _
+              / ___|(_)_ __ ___  _   _| | __ _| |_(_) ___  _ __
+              \___ \| | '_ ` _ \| | | | |/ _` | __| |/ _ \| '_ \
+               ___) | | | | | | | |_| | | (_| | |_| | (_) | | | |
+              |____/|_|_| |_| |_|\__,_|_|\__,_|\__|_|\___/|_| |_|
+		*/
 		//----------------------- Control the simulation
 
 		/**
@@ -154,19 +211,16 @@ namespace Physics {
 		* 
 		* @param pCB The callback object to use when collisions occur.
 		*/
-		void	SetCollisionCallback(ICallback* pCB);
-
-		/// Set the gravity vector that applies to all bodies, if body's gravity flag is true
-		void	SetGravity	(PMath::Vec3f val);
+		void				SetCollisionCallback(ICallback* pCB);
 
 		/// Set the minimum time step to ensure stability
-		void	SetMinTimeStep(Real dt);
+		void				SetMinTimeStep(Real dt);
 
 		///	Run one step of the simulation given dt in seconds
-		void	Simulate(Real dt);
+		void				Simulate(Real dt);
 
 		/// Intended for debugging use only
-		void	Render();
+		void				Render();
 
 	protected:
 		PEAux*	m_pAux;

@@ -117,7 +117,7 @@ namespace Physics {
 		void				SetRigidBodyVectorArray		(uint32 id,	ERigidBodyVectorArray	prop,	PMath::Vec3f const*const value, int byteStride, int count);
 		void				SetRigidBodyIntArray		(uint32 id, ERigidBodyIntArray		prop,	int const*const val, int count);
 
-		void				GetRigidBodyTransformMatrix	(uint32 id, PMath::Mat44& pResult);
+		void				GetRigidBodyTransformMatrix	(uint32 id, Real *const pResult);
 
 		/*
                       ____             _

@@ -3,45 +3,51 @@
 	@brief	The main public interface to the InsectAI system
 */
 
+#ifndef _INSECTAI_H_
+#define _INSECTAI_H_
+
 #include "PMath.h"
+
+
 
 /// @namespace	InsectAI
 /// @brief		The main public interface is contained in the InsectAI namespace
 namespace InsectAI {
 
-class Agent;
-class EngineAux;
-class DynamicState;
+	class Actuator;
+	class Agent;
+	class Engine;
+	class Entity;
+	class Sensor;
+	class Vehicle;
 
-/// @class	Engine
-/// @brief	The AI simulator
-class Engine {
-public:
-	Engine();
-	~Engine();
+	class DynamicState {
+	public:
+		DynamicState() { }
+		virtual ~DynamicState() { }
 
-	/// Add an agent to the simulation
-	/// @return the ID of the agent
-	int		AddAgent(Agent* pAgent);
+		virtual Real const*const	GetPosition() const = 0;
+		virtual Real const			GetHeading() const = 0;
+		virtual Real const			GetPitch() const = 0;
+	};
 
-	void	RemoveAgent(int id);
-	void	RemoveAllAgents();
-	int		GetAgentCount();
-	void	UpdateAgents(float dt);
+	class EntityDatabase {
+	public:
+		EntityDatabase() { }
+		virtual ~EntityDatabase() { }
 
-	// All the following are intended for the simple demo and will be removed.
-
-	/// Pick an agent
-	int		FindClosestAgent(float x, float y, float maxDistance);
-
-	/// Teleport an agent to a particular spot
-	void	SetAgentPosition(int id, PMath::Vec3f pos);
-
-	/// Highlights a particular agent; this is meant for for the simple demo
-	void	HighlightAgent(int id, float radius, float red, float green, float blue);
-
-private:
-	EngineAux* m_pAux;
-};
+		virtual DynamicState* GetState(Entity*) = 0;
+		virtual DynamicState* GetNearest(Entity*, uint32 filter) = 0;
+	};
 
 }	// end namespace InsectAI
+
+
+#include "InsectAI_Actuator.h"
+#include "InsectAI_Agent.h"
+#include "InsectAI_Engine.h"
+#include "InsectAI_Sensor.h"
+#include "InsectAI_Vehicle.h"
+
+
+#endif

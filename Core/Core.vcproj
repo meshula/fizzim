@@ -112,6 +112,12 @@
 				RelativePath=".\lq.c">
 			</File>
 			<File
+				RelativePath=".\ML_Camera.cpp">
+			</File>
+			<File
+				RelativePath=".\ML_DrawObject.cpp">
+			</File>
+			<File
 				RelativePath=".\ML_File.cpp">
 			</File>
 			<File
@@ -151,6 +157,9 @@
 			</File>
 			<File
 				RelativePath=".\ML_Camera.h">
+			</File>
+			<File
+				RelativePath=".\ML_DrawObject.h">
 			</File>
 			<File
 				RelativePath=".\ML_File.h">

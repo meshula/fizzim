@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="C:\Coding\fltk\fltk;&quot;$(ProjectDir)\..\Core&quot;"
+				AdditionalIncludeDirectories="C:\Coding\fltk\fltk;&quot;$(ProjectDir)\..\Core&quot;;&quot;$(ProjectDir)\..\PhysicsEngine\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -71,9 +71,10 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="C:\Coding\fltk\fltk;&quot;$(ProjectDir)\..\Core&quot;;&quot;$(ProjectDir)\..\PhysicsEngine\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="4"
-				UsePrecompiledHeader="3"
+				UsePrecompiledHeader="2"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="3"/>
@@ -81,8 +82,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="fltk.lib opengl32.lib glu32.lib comctl32.lib wsock32.lib glaux.lib"
 				OutputFile="$(OutDir)/Lab.exe"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="&quot;C:\Coding\fltk\fltk\lib&quot;"
+				IgnoreDefaultLibraryNames="libc"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"

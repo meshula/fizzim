@@ -4,15 +4,20 @@
 
 #include <vector>
 #include <fltk/Browser.h>
+#include <fltk/CheckButton.h>
 #include <fltk/Group.h>
 #include <fltk/Input.h>
 #include <fltk/Item.h>
+#include <fltk/PopupMenu.h>
 #include <fltk/ScrollGroup.h>
 #include <fltk/Widget.h>
 #include <fltk/Window.h>
 #include <fltk/xpmImage.h>
+
+#include "Clock.h"
 #include "ML_Camera.h"
 #include "ML_DrawObject.h"
+#include "PhysicsEngine.h"
 
 class Renderer {
 public:
@@ -26,9 +31,8 @@ public:
 	~Renderer() {
 	}
 
-	void BindCamera(Camera* pCamera) {
-		mp_Camera = pCamera;
-	}
+	void CurrentCamera(Camera* pCamera) { mp_Camera = pCamera; }
+	Camera* CurrentCamera() const { return mp_Camera; }
 
 	void SetViewport(float left, float right, float width, float height);
 	void Render(DrawObject* pObject);
@@ -44,70 +48,77 @@ private:
 	float						m_Left, m_Right, m_Width, m_Height;
 };
 
-/// Widget Object Tuple
-class WOT
-{
-public:
-	WOT() : mp_Drawn(0) { }
-	WOT(DrawObject* pOb) : mp_Drawn(pOb) { }
 
-	virtual ~WOT() { }
-
-	fltk::Widget*	mp_Widget;
-	DrawObject*		mp_Drawn;
-	char			m_Name[32];
-};
-
-class CameraWOT : public WOT
-{
-public:
-	CameraWOT() { }
-	virtual ~CameraWOT() { }
-	Camera	m_Camera;
-};
-
+class SpringData;
 class Scene;
 extern Scene* gScene;
 
 class Scene {
 public:
-	Scene(Renderer* pRenderer) : mp_Renderer(pRenderer), mp_Window(0),
-		m_LightsGroup(0), m_ActorsGroup(0), m_Mode(kGlobal),
-		m_Browser(0), m_CameraProperties(0), 
-		m_CameraModel(0), m_ArrowheadModel(0), m_IcosaModel(0) {
-	}
+	Scene();
+	~Scene();
 
-	~Scene() {
-	}
+	bool Init();
 
-	enum eMode {	kGlobal,		// nothing selected
-					kPropSelected,
-					kCameraSelected
+	enum eSelect {
+		kSelectNone, kSelectProp, kSelectCamera, kSelectSet
 	};
 
+	enum eSetType {
+		kInfinitePlane
+	};
+
+	enum ePropType {
+		kSphere, kMesh
+	};
+
+	/// Widget Object Tuple
+	class WOT
+	{
+	public:
+		WOT() : m_Kind(kSelectNone), mp_Drawn(0), m_Physics(0) { }
+		WOT(eSelect kind) : m_Kind(kind), mp_Drawn(0), m_Physics(0) { }
+		WOT(eSelect kind, DrawObject* pOb) : m_Kind(kind), mp_Drawn(pOb), m_Physics(0) { }
+
+		virtual ~WOT() { }
+
+		eSelect			Kind() const { return m_Kind; }
+
+		fltk::Widget*	mp_Widget;
+		DrawObject*		mp_Drawn;
+		char			m_Name[32];
+		uint32			m_Physics;
+	private:
+		eSelect			m_Kind;
+	};
+
+	class SetWOT : public WOT
+	{
+	public:
+		SetWOT() : WOT(kSelectSet) { }
+		SetWOT(DrawObject* pOb) : WOT(kSelectSet, pOb) { }
+		virtual ~SetWOT() { }
+	};
+
+	class CameraWOT : public WOT
+	{
+	public:
+		CameraWOT() : WOT(kSelectCamera) { }
+		virtual ~CameraWOT() { }
+		Camera	m_Camera;
+	};
+
+	//------------------------------------------------------------------------------------------------
 	class SceneList {
 	public:
-		SceneList() : m_Group(0), m_Curr(-1), m_Selected(-1), m_UniqueID(1), m_Icon(0) { }
+		SceneList() : m_Group(0), m_UniqueID(1), m_Icon(0) { }
 		~SceneList() { for (int i = 0; i < (int)m_Objects.size(); ++i) delete m_Objects[i]; }
 
 		int		size()		const	{ return (int) m_Objects.size(); }		///< number of objects in the list
 		int		unique()			{ int retval = m_UniqueID; ++m_UniqueID; return retval; }
-		int		current()	const	{ return m_Curr; }						///< the currently active object
-		void	current(int i)		{ m_Curr = i; }							///< set the currently active object
-		int		selected()	const	{ return m_Selected; }					///< the object selected in the UI list
-		void	selected(int s)		{ m_Selected = s; }						///< set the object selected in the UI list
 
-		int		FindWidget(fltk::Widget* pWidget) {
-			int ret = -1;
-			for (int i = 0; i < (int) m_Objects.size(); ++i) {
-				if (pWidget == m_Objects[i]->mp_Widget) {					// found the widget?
-					ret = i;
-					break;
-				}
-			}
-			return ret;
-		}
-
+		int		FindObject(Renderer*, float x, float y);					///< find the object under the cursor
+		int		FindWidget(fltk::Widget* pWidget);
 		void	Render();
 
 		fltk::Group*		m_Group;
@@ -115,85 +126,45 @@ public:
 		std::vector<WOT*>	m_Objects;
 
 	private:
-		int					m_Curr;
-		int					m_Selected;
 		int					m_UniqueID;
 	};
+	//------------------------------------------------------------------------------------------------
+
+	static void IdleCallback(void* pV);
+	void Idle();
 
 	void SetIcons(fltk::xpmImage* pCameraIcon, fltk::xpmImage* pPropIcon, fltk::xpmImage* pSetIcon) { 
 		m_CameraList.m_Icon = pCameraIcon; m_PropList.m_Icon = pPropIcon; m_SetList.m_Icon = pSetIcon;
 	}
 
 	void HideAllProperties() {
-		m_CameraList.selected(-1);
-		m_PropList.selected(-1);
 		m_CameraProperties->hide();
+		m_PropProperties->hide();
+		m_SetProperties->hide();
 	}
 
-	void AddSet(DrawObject* pObject);
-	void AddProp(DrawObject* pObject);
+	void AddSet(DrawObject* pObject, eSetType setType);
+	void AddProp(DrawObject* pObject, ePropType propType);
 
-	void DisplayCameraProperties() {
-		if (m_CameraList.selected() != -1) {
-			m_CameraPropertyName->value(m_CameraList.m_Objects[m_CameraList.selected()]->mp_Widget->label());
-			m_CameraProperties->show();
-		}
-		else {
-			m_CameraProperties->hide();
-		}
-	}
+	void Deselect();
+	void PrimarySelect(WOT*);
+	void SecondarySelect(WOT*);
+	void PotentialSelect(WOT*);
 
-	static void SelectCameraFromList(fltk::Widget* pWidget, void* pWindow) {
-		int i = gScene->m_CameraList.FindWidget(pWidget);
-		if (i != -1) {
-			if (gScene->m_Mode != kCameraSelected) {
-				gScene->HideAllProperties();
-			}
-			gScene->m_Mode = kCameraSelected;
-			gScene->m_CameraList.selected(i);
-			gScene->DisplayCameraProperties();
-			gScene->mp_Window->redraw();
-		}
-	}
+	WOT* PrimarySelect()		const { return m_PrimarySelect; }
+	WOT* SecondarySelect()		const { return m_SecondarySelect; }
+	WOT* PotentialSelect()		const { return m_PotentialSelect; }
 
-	static void SelectPropFromList(fltk::Widget* pWidget, void* pWindow) {
-		int i = gScene->m_PropList.FindWidget(pWidget);
-		if (i != -1) {
-			if (gScene->m_Mode != kPropSelected) {
-				gScene->HideAllProperties();
-			}
-			gScene->m_Mode = kPropSelected;
-			gScene->m_PropList.selected(i);
-			//gScene->DisplayPropProperties();
-			gScene->mp_Window->redraw();
-		}
-	}
+	static void SelectCameraFromList(fltk::Widget* pWidget, void* pWindow);
+	static void SelectPropFromList(fltk::Widget* pWidget, void* pWindow);
+	static void SelectSetFromList(fltk::Widget* pWidget, void* pWindow);
 
-	static void SelectSetFromList(fltk::Widget* pWidget, void* pWindow) {
-		int i = gScene->m_SetList.FindWidget(pWidget);
-		if (i != -1) {
-			gScene->m_SetList.selected(i);
-			//gScene->DisplayCameraProperties();
-			gScene->mp_Window->redraw();
-		}
-	}
+	void CreateCamera(char* pName);
+	void DupCamera();
+	Camera* CurrentCamera() const { return mp_Renderer->CurrentCamera(); }
 
-	int CreateCamera(char* pName);
-
-	int DupCamera() {
-		CameraWOT* pCurrCamera = static_cast<CameraWOT*>(m_CameraList.m_Objects[m_CameraList.current()]);
-		char temp[32];
-		sprintf(temp, "Camera %d", m_CameraList.unique());
-		int ret = CreateCamera(temp);
-		CameraWOT* pNewCamera = static_cast<CameraWOT*>(m_CameraList.m_Objects[m_CameraList.current()]);
-		pNewCamera->m_Camera.Set(pCurrCamera->m_Camera);	// copy settings of original camera
-		return ret;
-	}
-
-	Camera* GetCurrentCamera() {
-		CameraWOT* pCurrCamera = static_cast<CameraWOT*>(m_CameraList.m_Objects[m_CameraList.current()]);
-		return &pCurrCamera->m_Camera;
-	}
+	Material*					m_GridMaterial;
+	DrawGrid*					m_DrawGrid;
 
 	SceneList					m_CameraList;
 	SceneList					m_PropList;
@@ -203,21 +174,47 @@ public:
 	fltk::Group*				m_LightsGroup; 
 	fltk::Group*				m_ActorsGroup;
 
+	fltk::ScrollGroup*			m_PropProperties;
+	fltk::Input*				m_PropPropertyName;
+	fltk::CheckButton*			m_PropActive;
+	fltk::Button*				m_PropLink;
+	fltk::Button*				m_PropSpring;
+
 	fltk::ScrollGroup*			m_CameraProperties;
 	fltk::Input*				m_CameraPropertyName;
 
+	fltk::ScrollGroup*			m_SetProperties;
+	fltk::Input*				m_SetPropertyName;
+	fltk::CheckButton*			m_SetCollider;
+
+	fltk::PopupMenu*			m_RMBMenu;
+
 	fltk::Window*				mp_Window;
+
+	fltk::Button*				m_Rewind;
+	fltk::Button*				m_Play;
 
 	fltk::Browser*				m_Browser;
 	Renderer*					mp_Renderer;
+
+	fltk::Input*				m_TimeDisplay;
 
 	DrawMesh*					m_CameraModel;
 	DrawMesh*					m_ArrowheadModel;
 	DrawMesh*					m_IcosaModel;
 
-	eMode						m_Mode;
+	Physics::Engine				m_Phys;
+	Clock*						m_Clock;
+	TimeVal						m_PrevTime;
+
+	std::vector<SpringData*>	m_SpringData;
 
 private:
+	WOT							m_Deselected;
+
+	WOT*						m_PrimarySelect;
+	WOT*						m_SecondarySelect;
+	WOT*						m_PotentialSelect;
 
 	static fltk::Widget* AddItem(fltk::Group* parent, const char* name, int, fltk::Image* image) {
 		parent->begin();
@@ -225,6 +222,14 @@ private:
 		o->image(image);
 		return o;
 	}
+};
+
+class SpringData {
+public:
+	Scene::WOT*	m_BodyA;
+	Scene::WOT*	m_BodyB;
+	uint32	m_Physics;
+	bool m_ResistCompress;
 };
 
 #endif

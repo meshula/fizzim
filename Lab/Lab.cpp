@@ -20,6 +20,7 @@
 #include <FL/math.h>
 
 #include <fltk/Browser.h>
+#include <fltk/CheckButton.h>
 #include <fltk/ColorChooser.h>
 #include <fltk/file_chooser.h>
 #include <fltk/GLWindow.h>
@@ -45,17 +46,16 @@
 #include "file_small.xpm"
 #include "camera.xpm"
 #include "teapot.xpm"
+#include "set.xpm"
 
 using namespace PMath;
 
-class Scene;
 fltk::xpmImage* folderSmall;
 fltk::xpmImage* fileSmall;
 
-// we make a vanilla stock material always available
-DiffuseMaterial gStockMaterial;
-
-
+#define PLAY_LABEL "@+4>"
+#define PAUSE_LABEL "@+9||"
+#define ZEROTIME_LABEL "00:00:00:00"
 
 class RenderWindow : public fltk::GlWindow {
 	class RenderArea : public Fl_Box {
@@ -69,9 +69,8 @@ class RenderWindow : public fltk::GlWindow {
 	};
 
 public:
-	RenderWindow(Scene* pScene, Renderer* pRenderer, int x,int y,int w,int h,const char *l=0) :
+	RenderWindow(Scene* pScene, int x,int y,int w,int h,const char *l=0) :
 		fltk::GlWindow(x, y, w, h), mp_Scene(pScene)  {
-		mp_Renderer = pRenderer;
 		mode(Fl_Mode(FL_DOUBLE | FL_RGB));								// set double buffered, RGB
 		begin();
 		mp_InteractiveArea = new RenderArea(pScene, x, y, w, h);
@@ -86,73 +85,73 @@ private:
 
 	void draw();
 	Scene*		mp_Scene;
-	Renderer*	mp_Renderer;
 };
 
 class WorkspaceWindow : public fltk::Window {
 public:
-	WorkspaceWindow(Scene* pScene, Renderer* pRenderer, int w,int h, const char *l=0);
-	virtual ~WorkspaceWindow() { }
+	WorkspaceWindow(Scene* pScene, int w,int h, const char *l=0);
+	virtual ~WorkspaceWindow();
 
 	Scene*				GetScene() const { return mp_Scene; }
-	Renderer*			GetRenderer() const { return mp_Renderer; }
+	Renderer*			GetRenderer() const { return mp_Scene->mp_Renderer; }
 	fltk::Input*		mp_StatusLabel;
 
 	RenderWindow*		mp_RenderWindow;
 
 private:
 	Scene*				mp_Scene;
-	Renderer*			mp_Renderer;
 };
 
-WorkspaceWindow::WorkspaceWindow(Scene* pScene, Renderer* pRenderer, int w, int h, const char *l) :
-	mp_Renderer(pRenderer),
+WorkspaceWindow::WorkspaceWindow(Scene* pScene, int w, int h, const char *l) :
 	mp_Scene(pScene), 
 	fltk::Window(w,h, l) 
 {
 }
 
+WorkspaceWindow :: ~WorkspaceWindow() {
+}
+
 static WorkspaceWindow* sWorkspace = 0;
 
 
-static void DrawObjectCues(DrawObject* pProp) {
+static void DrawObjectCues(DrawObject* pProp, PMath::Vec3f boxColor) {
 	float temp[16];
+	PMath::Vec3f corners[8];
+
+	// draw box
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 		pProp->LoadMatrix();
-
-		glColor3f(0.1f, 1.0f, 0.1f);
-
-		PMath::Vec3f corners[8];
+		glColor3f(boxColor[0], boxColor[1], boxColor[2]);
 		pProp->DrawBoundingBox();
-
-		pProp->GetBoundingCorners(corners);
-		pProp->GetLocalToWorld(temp);
-		PMath::Mat44Scale3x3(temp, 0.1f);
-		PMath::Vec3f tempPos;
-		tempPos[0] = temp[12]; tempPos[1] = temp[13]; tempPos[2] = temp[14];
-		DiffuseMaterial* pMat = (DiffuseMaterial*) gScene->m_IcosaModel->GetMaterial();
-		pMat->m_Diffuse[0] = 0.7f;
-		pMat->m_Diffuse[1] = 0.7f;
-		pMat->m_Diffuse[2] = 0.1f;
-		gScene->m_IcosaModel->BindMaterial();
-		for (int i = 0; i < 8; ++i) {
-			temp[12] = tempPos[0] + corners[i][0];
-			temp[13] = tempPos[1] + corners[i][1];
-			temp[14] = tempPos[2] + corners[i][2];
-			gScene->m_IcosaModel->SetMatrix(temp);
-			gScene->mp_Renderer->Render(gScene->m_IcosaModel);
-		}
-		gScene->m_IcosaModel->UnbindMaterial();
 		glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+
+	// draw corners
+	DiffuseMaterial* pMat = (DiffuseMaterial*) gScene->m_IcosaModel->GetMaterial();
+	pMat->m_Diffuse[0] = 0.7f;
+	pMat->m_Diffuse[1] = 0.7f;
+	pMat->m_Diffuse[2] = 0.1f;
+	gScene->m_IcosaModel->BindMaterial();
+
+	pProp->GetWorldBoundingCorners(corners);
+	PMath::Mat44Identity(temp);
+	PMath::Mat44Scale3x3(temp, 0.1f);
+	for (int i = 0; i < 8; ++i) {
+		temp[12] = corners[i][0];
+		temp[13] = corners[i][1];
+		temp[14] = corners[i][2];
+		gScene->m_IcosaModel->SetMatrix(temp);
+		gScene->mp_Renderer->Render(gScene->m_IcosaModel);
+	}
+	gScene->m_IcosaModel->UnbindMaterial();
 }
 
-static void DrawCameraCues(Camera* pCamera, DrawObject* pMesh) {
+static void DrawCameraCues(Camera* pCamera, DrawObject* pMesh, PMath::Vec3f boxColor) {
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 		pMesh->LoadMatrix();
-		glColor3f(0.1f, 1.0f, 0.1f);
+		glColor3f(boxColor[0], boxColor[1], boxColor[2]);
 		pMesh->DrawBoundingBox();
 		glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
@@ -179,27 +178,47 @@ static void DrawCameraCues(Camera* pCamera, DrawObject* pMesh) {
 void RenderWindow::draw() {
 	int i;
 	float temp[16];
+	PMath::Vec3f boxColor;
 
 	// has the window been resized?
 	if (!valid()) {
 		valid(1);
-		mp_Renderer->SetViewport(0.0f, 0.0f, (float) w(), (float) h());
+		mp_Scene->mp_Renderer->SetViewport(0.0f, 0.0f, (float) w(), (float) h());
 		mp_InteractiveArea->resize(0, 0, w(), h());
 	}
 
-	mp_Renderer->BeginScene();
+	mp_Scene->mp_Renderer->BeginScene();
 	mp_Scene->m_SetList.Render();
 	mp_Scene->m_PropList.Render();
 
-	i = mp_Scene->m_PropList.selected();
-	if (i != -1) {
-		DrawObjectCues(mp_Scene->m_PropList.m_Objects[i]->mp_Drawn);
+	Scene::WOT* pPrimary = mp_Scene->PrimarySelect();
+	if (pPrimary->Kind() == Scene::kSelectProp) {
+		boxColor[0] = 0.1f;
+		boxColor[1] = 1.0f;
+		boxColor[2] = 0.1f;
+		DrawObjectCues(pPrimary->mp_Drawn, boxColor);
+	}
+
+	Scene::WOT* pSecondary = mp_Scene->SecondarySelect();
+	if (pSecondary->Kind() == Scene::kSelectProp) {
+		boxColor[0] = 1.0f;
+		boxColor[1] = 1.0f;
+		boxColor[2] = 0.1f;
+		DrawObjectCues(pSecondary->mp_Drawn, boxColor);
+	}
+
+	Scene::WOT* pPotential = mp_Scene->PotentialSelect();
+	if (pPrimary != pPotential && pSecondary != pPotential && pPotential->Kind() != Scene::kSelectNone) {
+		boxColor[0] = 1.0f;
+		boxColor[1] = 0.1f;
+		boxColor[2] = 0.1f;
+		DrawObjectCues(pPotential->mp_Drawn, boxColor);
 	}
 
 	for (i = 0; i < mp_Scene->m_CameraList.size(); ++i) {
-		if (i != mp_Scene->m_CameraList.current()) {
-			CameraWOT* pCWOT = static_cast<CameraWOT*>(mp_Scene->m_CameraList.m_Objects[i]);
-			Camera* pCamera = &pCWOT->m_Camera;
+		Scene::CameraWOT* pCWOT = static_cast<Scene::CameraWOT*>(mp_Scene->m_CameraList.m_Objects[i]);
+		Camera* pCamera = &pCWOT->m_Camera;
+		if (pCamera != mp_Scene->mp_Renderer->CurrentCamera()) {
 			pCamera->GetCameraMatrix(temp);
 			temp[12] = pCamera->m_Position[0];
 			temp[13] = pCamera->m_Position[1];
@@ -207,56 +226,166 @@ void RenderWindow::draw() {
 			PMath::Mat44Transpose3x3(temp);
 			PMath::Mat44Scale3x3(temp, 0.5f);
 			mp_Scene->m_CameraModel->SetMatrix(temp);
-			mp_Renderer->Render(mp_Scene->m_CameraModel);
+			mp_Scene->mp_Renderer->Render(mp_Scene->m_CameraModel);
 
-			if (i == mp_Scene->m_CameraList.selected()) {
-				DrawCameraCues(pCamera, mp_Scene->m_CameraModel);
+			if (pCWOT == mp_Scene->PrimarySelect()) {
+				boxColor[0] = 0.1f;
+				boxColor[1] = 1.0f;
+				boxColor[2] = 0.1f;
+				DrawCameraCues(pCamera, mp_Scene->m_CameraModel, boxColor);
 			}
 		}
 	}
 
-	mp_Renderer->EndScene();
+	if (mp_Scene->m_SpringData.size() > 0) {
+		glBegin(GL_LINES);
+		for (i = 0; i < (int) mp_Scene->m_SpringData.size(); ++i) {
+			PMath::Vec3f posA, posB;
+			mp_Scene->m_SpringData[i]->m_BodyA->mp_Drawn->GetWorldPosition(posA);
+			mp_Scene->m_SpringData[i]->m_BodyB->mp_Drawn->GetWorldPosition(posB);
+			if (mp_Scene->m_SpringData[i]->m_ResistCompress) {
+				glColor3f(1.0f, 0.0f, 0.0f);
+			}
+			else {
+				glColor3f(0.0f, 1.0f, 0.0f);
+			}
+			glVertex3f(posA[0], posA[1], posA[2]);
+			glVertex3f(posB[0], posB[1], posB[2]);
+		}
+		glEnd();
+	}
+
+	mp_Scene->mp_Renderer->EndScene();
 }
 
 
-
-static void ChangeCameraName(fltk::Widget* pWidget, void* pWindow) {
+static void ChangePrimaryName(fltk::Widget* pWidget, void* pWindow) {
 	fltk::Input* pInput = (fltk::Input*) pWidget;
-	Scene* pScene = sWorkspace->GetScene();
-	if (pScene->m_CameraList.selected() != -1) {
-		CameraWOT* pCameraWOT = static_cast<CameraWOT*>(pScene->m_CameraList.m_Objects[pScene->m_CameraList.selected()]);
-		Camera* pCamera = &pCameraWOT->m_Camera;
-		strncpy(pCameraWOT->m_Name, pInput->value(), 31);
-		pCameraWOT->m_Name[31] = '\0';
-		pCameraWOT->mp_Widget->label(pCameraWOT->m_Name);
-		pScene->m_Browser->redraw();
+	Scene::WOT* pPrimary = gScene->PrimarySelect();
+	if (pPrimary->Kind() != Scene::kSelectNone) {
+		strncpy(pPrimary->m_Name, pInput->value(), 31);
+		pPrimary->m_Name[31] = '\0';
+		pPrimary->mp_Widget->label(pPrimary->m_Name);
+		gScene->m_Browser->redraw();
+	}
+}
+
+static void Rewind_cb(fltk::Widget* pWidget, void* pWindow) {
+	gScene->m_Play->label(PLAY_LABEL);
+	gScene->m_Play->redraw();
+	gScene->m_Clock->setPausedState(true);
+	gScene->m_Clock->reset();
+	gScene->m_TimeDisplay->value(ZEROTIME_LABEL);
+}
+
+static void Play_cb(fltk::Widget* pWidget, void* pWindow) {
+	if (gScene->m_Clock->getPausedState()) {
+		gScene->m_Play->label(PAUSE_LABEL);
+		gScene->m_Clock->setPausedState(false);
+	}
+	else {
+		gScene->m_Play->label(PLAY_LABEL);
+		gScene->m_Clock->setPausedState(true);
 	}
 }
 
 static void ActivateCamera_cb(fltk::Widget* pWidget, void* pWindow) {
-	Scene* pScene = sWorkspace->GetScene();
-	if (pScene->m_CameraList.selected() != -1) {
-		pScene->m_CameraList.current(pScene->m_CameraList.selected());
-		pScene->mp_Renderer->BindCamera(pScene->GetCurrentCamera());
+	if (gScene->PrimarySelect()->Kind() == Scene::kSelectCamera) {
+		Scene::CameraWOT* pCameraWOT = static_cast<Scene::CameraWOT*>(gScene->PrimarySelect());
+		gScene->mp_Renderer->CurrentCamera(&pCameraWOT->m_Camera);
+	}
+}
+
+static void SetIsCollider_cb(fltk::Widget* pWidget, void* pWindow) {
+	if (gScene->PrimarySelect()->Kind() == Scene::kSelectSet) {
+		Scene::SetWOT* pSetWOT = static_cast<Scene::SetWOT*>(gScene->PrimarySelect());
+		gScene->m_Phys.SetRigidBodyBool(pSetWOT->m_Physics, Physics::Engine::propCollidable, pWidget->value());
+	}
+}
+
+static void PropSimulate_cb(fltk::Widget* pWidget, void* pWindow) {
+	if (gScene->PrimarySelect()->Kind() == Scene::kSelectProp) {
+		Scene::SetWOT* pSetWOT = static_cast<Scene::SetWOT*>(gScene->PrimarySelect());
+		gScene->m_Phys.SetRigidBodyBool(pSetWOT->m_Physics, Physics::Engine::propActive, pWidget->value());
+	}
+}
+
+void CreateLink_cb(Fl_Widget *o, void *p) {
+	Scene::WOT* pPrimary = gScene->PrimarySelect();
+	Scene::WOT* pSecondary = gScene->SecondarySelect();
+	if (pPrimary->Kind() == Scene::kSelectProp && pSecondary->Kind() == Scene::kSelectProp) {
+		PMath::Vec3f posA, posB;
+		pPrimary->mp_Drawn->GetWorldPosition(posA);
+		pSecondary->mp_Drawn->GetWorldPosition(posB);
+		Real length = PMath::Vec3fDistance(posA, posB);
+		int spring = gScene->m_Phys.AddSpring();
+		gScene->m_Phys.SetSpringUInt32(spring,			Physics::Engine::propBodyA,				pPrimary->m_Physics);
+		gScene->m_Phys.SetSpringUInt32(spring,			Physics::Engine::propBodyB,				pSecondary->m_Physics);
+		gScene->m_Phys.SetSpringBool(spring,			Physics::Engine::propResistCompression, true);
+		gScene->m_Phys.SetSpringScalar(spring,			Physics::Engine::propSpringRestLength,	length);
+		gScene->m_Phys.SetSpringScalar(spring,			Physics::Engine::propSpringStiffness,	Real(100));		// make the spring too stiff, and the system will explode. 200 is ok
+		gScene->m_Phys.SetSpringScalar(spring,			Physics::Engine::propSpringDamping,		Real(0.9));		// 0 means no damping, 1 means critical damping
+
+		SpringData* pData = new SpringData();
+		pData->m_BodyA = pPrimary;
+		pData->m_BodyB = pSecondary;
+		pData->m_Physics = spring;
+		pData->m_ResistCompress = true;
+		gScene->m_SpringData.push_back(pData);
+	}
+}
+
+void CreateSpring_cb(Fl_Widget *o, void *p) {
+	Scene::WOT* pPrimary = gScene->PrimarySelect();
+	Scene::WOT* pSecondary = gScene->SecondarySelect();
+	if (pPrimary->Kind() == Scene::kSelectProp && pSecondary->Kind() == Scene::kSelectProp) {
+		PMath::Vec3f posA, posB;
+		pPrimary->mp_Drawn->GetWorldPosition(posA);
+		pSecondary->mp_Drawn->GetWorldPosition(posB);
+		Real length = PMath::Vec3fDistance(posA, posB);
+		int spring = gScene->m_Phys.AddSpring();
+		gScene->m_Phys.SetSpringUInt32(spring,			Physics::Engine::propBodyA,				pPrimary->m_Physics);
+		gScene->m_Phys.SetSpringUInt32(spring,			Physics::Engine::propBodyB,				pSecondary->m_Physics);
+		gScene->m_Phys.SetSpringBool(spring,			Physics::Engine::propResistCompression, false);
+		gScene->m_Phys.SetSpringScalar(spring,			Physics::Engine::propSpringRestLength,	length);
+		gScene->m_Phys.SetSpringScalar(spring,			Physics::Engine::propSpringStiffness,	Real(100));		// make the spring too stiff, and the system will explode. 200 is ok
+		gScene->m_Phys.SetSpringScalar(spring,			Physics::Engine::propSpringDamping,		Real(0.9));		// 0 means no damping, 1 means critical damping
+
+		SpringData* pData = new SpringData();
+		pData->m_BodyA = pPrimary;
+		pData->m_BodyB = pSecondary;
+		pData->m_Physics = spring;
+		pData->m_ResistCompress = false;
+		gScene->m_SpringData.push_back(pData);
 	}
 }
 
 void CreateInfinitePlane(Fl_Widget *o, void *p) {
-	DrawPlane* pObject = new DrawPlane(&gStockMaterial);
-	sWorkspace->GetScene()->AddSet(pObject);
+	DiffuseMaterial* pMat = new DiffuseMaterial();
+	pMat->m_Lit = false;
+	DrawPlane* pObject = new DrawPlane(pMat);
+	sWorkspace->GetScene()->AddSet(pObject, Scene::kInfinitePlane);
 }
 
 void CreateSphere(Fl_Widget *o, void *p) {
-	DrawSphere* pObject = new DrawSphere(&gStockMaterial);
-	sWorkspace->GetScene()->AddProp(pObject);
+	DiffuseMaterial* pMat = new DiffuseMaterial();
+	pMat->m_Lit = true;
+	DrawSphere* pObject = new DrawSphere(pMat);
+	Real* pMatrix = pObject->GetLocalToWorldPtr();
+	pMatrix[12]  = PMath::randf(1, 10);
+	pMatrix[13]  = PMath::randf(1, 10);
+	pMatrix[14] = PMath::randf(1, 10);
+	sWorkspace->GetScene()->AddProp(pObject, Scene::kSphere);
 }
 
 void CreateOBJProp(Fl_Widget* o, void* pWindow) {
 	const char *p = fltk::file_chooser("Choose an OBJ mesh file", "*.obj", "");
 	if (p != 0) {
-		DrawMesh* pObject = new DrawMesh(&gStockMaterial);
+		DiffuseMaterial* pMat = new DiffuseMaterial();
+		pMat->m_Lit = true;
+		DrawMesh* pObject = new DrawMesh(pMat);
 		pObject->CreateFromOBJFile(p);
-		sWorkspace->GetScene()->AddProp(pObject);
+		sWorkspace->GetScene()->AddProp(pObject, Scene::kMesh);
 	}
 }
 
@@ -266,21 +395,7 @@ void CreateCamera(Fl_Widget *o, void *p) {
 }
 
 
-fltk::Color c = fltk::BLACK;
-#define fullcolor_cell ((fltk::Color)16)
-/*
-void cb1(fltk::Widget *, void *v) {
-  c = fltk::show_colormap(c);
-  fltk::Widget* b = (fltk::Widget*)v;
-  b->color(c);
-  b->parent()->redraw();
-}
-*/
-
 void ColorButtonColorChooserCB(fltk::Widget *pWidget, void *v) {
-	uchar r,g,b;
-	//  Fl::get_color(c,r,g,b);
-	fltk::split_color(c,r,g,b);
 	fltk::ColorButton* pB = (fltk::ColorButton*) pWidget;
 	float red = pB->red();
 	float green = pB->green();
@@ -304,7 +419,9 @@ void BackgroundCB(fltk::Widget *pWidget, void *v) {
 
 int RenderWindow::RenderArea::handle(int event)
 {
-	int retval = 0;
+	fltk::Widget* pFocus = fltk::focus();
+
+	int retval = 1;
 	static bool controlKey = false;
 	static bool shiftKey = false;
 
@@ -324,45 +441,50 @@ int RenderWindow::RenderArea::handle(int event)
 
 	unsigned int key = Fl::event_key();
 
-	char* eventS = "?";
 	switch (event) {
-
 		case FL_ENTER:
 			mouseInWindow = true;
-			retval = 1; 
-			eventS = "enter";	
 			break;
 
 		case FL_LEAVE:		
 			mouseInWindow = false;
-			retval = 1; 
-			eventS = "leave";	
 			break;
 
 		case FL_FOCUS:		
-			eventS = "focus";	
-			retval = 1;
 			break;
 
 		case FL_UNFOCUS:
-			eventS = "focus";	
-			retval = 1;
 			break;
 
-		case FL_PUSH:		retval = 1; eventS = "push";	break;
+		case FL_PUSH:		
+			break;
 
-		case FL_MOVE:		
-			retval = 1; 
-			eventS = "move";	
-	{
-		char temp[128];
-		PMath::Vec3f world;
-		PMath::Vec3fZero(world);
-		PMath::Vec3f proj;
-		sWorkspace->GetRenderer()->ProjectToScreen(proj, world);
-		sprintf(temp, "%f %f %f", proj[0], proj[1], proj[2]);
-		sWorkspace->mp_StatusLabel->value(temp);
-	}
+		case FL_MOVE:
+			{
+				Scene::WOT* pPotential = 0;
+				Scene::eSelect potentialSelect = Scene::kSelectProp;
+				int index = gScene->m_PropList.FindObject(gScene->mp_Renderer, (float) newX, (float) newY);
+				if (index != -1) {
+					pPotential = gScene->m_PropList.m_Objects[index];
+				}
+
+				if (index == -1) {
+					potentialSelect = Scene::kSelectCamera;
+					index = gScene->m_CameraList.FindObject(gScene->mp_Renderer, (float) newX, (float) newY);
+					if (index != -1) {
+						pPotential = gScene->m_CameraList.m_Objects[index];
+					}
+				}
+
+				if (index == -1) {
+					potentialSelect = Scene::kSelectSet;
+					index = gScene->m_SetList.FindObject(gScene->mp_Renderer, (float) newX, (float) newY);
+					if (index != -1) {
+						pPotential = gScene->m_SetList.m_Objects[index];
+					}
+				}
+				gScene->PotentialSelect(pPotential);
+			}
 			break;
 
 		case FL_SHORTCUT:
@@ -371,72 +493,104 @@ int RenderWindow::RenderArea::handle(int event)
 				case FL_Control_L:
 				case FL_Control_R:
 					controlKey = true;
-					retval = 1;
 					break;
 
 				case FL_Shift_L:
 				case FL_Shift_R:
 					shiftKey = true;
-					retval = 1;
 					break;
 			}
 			//retval = mouseInWindow ? 1 : 0;
-			eventS = "keydown";	
 			break;
 
 	case FL_KEYUP:
-		switch (key) {
-			case 'f':
-			case 'F':
-				if (gScene->m_PropList.selected() != -1)
-				{
-					Vec3f pos;
-					WOT* prop = gScene->m_PropList.m_Objects[gScene->m_PropList.selected()];
-					prop->mp_Drawn->GetPosition(pos);
-					gScene->GetCurrentCamera()->Interest(pos);
-				}
-				break;
+		if (pFocus != gScene->m_PropPropertyName && pFocus != gScene->m_CameraPropertyName && pFocus != gScene->m_SetPropertyName) {
+			switch (key) {
+				case ' ':
+					gScene->Deselect();
+					break;
 
+				case 'f':
+				case 'F':
+					// if a prop is the primary select, focus on it
+					if (gScene->PrimarySelect()->Kind() == Scene::kSelectProp) {
+						Vec3f pos;
+						gScene->PrimarySelect()->mp_Drawn->GetWorldPosition(pos);
+						gScene->CurrentCamera()->Interest(pos);
+					}
+					// else if a camera is primary, focus it on the secondary
+					else if (gScene->PrimarySelect()->Kind() == Scene::kSelectCamera) {
+						if (gScene->SecondarySelect()->Kind() != Scene::kSelectNone) {
+							Vec3f pos;
+							Scene::WOT* prop = gScene->SecondarySelect();
+							prop->mp_Drawn->GetWorldPosition(pos);
+							Scene::CameraWOT* pCamera = static_cast<Scene::CameraWOT*>(gScene->PrimarySelect());
+							pCamera->m_Camera.Interest(pos);
+						}
+					}
+					break;
+			}
+		}
+
+		// treat control and shift keys separately since mouse maneuvering could still validly occur
+		switch (key) {
 			case FL_Control_L:
 			case FL_Control_R:
 				controlKey = false;
-				retval = 1;
 				break;
 
 			case FL_Shift_L:
 			case FL_Shift_R:
 				shiftKey = false;
-				retval = 1;
 				break;
+		}
+		break;
+
+	case FL_MOUSEWHEEL:
+		{
+			Camera* pCamera = gScene->CurrentCamera();
+			pCamera->Dolly(0, (float) fltk::event_dy());
 		}
 		break;
 
 	case FL_DRAG:
 		if (controlKey && shiftKey) {
-			retval = 1; 
-			eventS = "tumble";	
-			Scene* pScene = sWorkspace->GetScene();
-			Camera* pCamera = pScene->GetCurrentCamera();
+			Camera* pCamera = gScene->CurrentCamera();
 			pCamera->Tumble(newfX - oldfX, newfY - oldfY);
 		}
 		else if (controlKey) {
-			retval = 1; 
-			eventS = "track";	
-			Scene* pScene = sWorkspace->GetScene();
-			Camera* pCamera = pScene->GetCurrentCamera();
+			Camera* pCamera = gScene->CurrentCamera();
 			pCamera->Track(newfX - oldfX, newfY - oldfY);
 		}
 		else if (shiftKey) {
-			retval = 1; 
-			eventS = "dolly";	
-			Scene* pScene = sWorkspace->GetScene();
-			Camera* pCamera = pScene->GetCurrentCamera();
+			Camera* pCamera = gScene->CurrentCamera();
 			pCamera->Dolly(newfX - oldfX, newfY - oldfY);
 		}
 		break;
 
-	case FL_RELEASE:	retval = 1; eventS = "release";	break;
-	default:			retval = 0; eventS = "?";		break;
+	case FL_RELEASE:
+		if (gScene->PotentialSelect()->Kind() != Scene::kSelectNone) {
+			// if the potential is the secondary, promote it to primary
+			if (gScene->PotentialSelect() == gScene->SecondarySelect()) {
+				gScene->PrimarySelect(gScene->PotentialSelect());
+				gScene->SecondarySelect(0);										// clear secondary select
+				fltk::Widget* pWidget = gScene->PrimarySelect()->mp_Widget;
+				Group* pGroup = gScene->m_Browser;
+				int groupIndex = pGroup->find(pWidget);							// this finds the group the widget is contained in
+				int widgetIndex = gScene->m_PropList.m_Group->find(pWidget);	// this finds the index within the group
+				gScene->m_Browser->goto_index(groupIndex, widgetIndex);
+				gScene->m_Browser->set_focus();
+			}
+			else {
+				// promote the potential to the secondary
+				gScene->SecondarySelect(gScene->PotentialSelect()); 
+			}
+		}
+		break;
+
+	default:			
+		retval = 0; 	
+		break;
 	}
 
 	sWorkspace->mp_RenderWindow->redraw();
@@ -450,7 +604,7 @@ int RenderWindow::RenderArea::handle(int event)
 
 
 Fl_Menu_Item MenuNothingSelected[] = {
-
+/*
 	{"&Edit",0,0,0,FL_SUBMENU},
 		{"Undo",	FL_ALT+'z',	0, 0, FL_MENU_INACTIVE},						// nothing to undo, therefore inactive
 		{"Redo",	FL_ALT+'r',	0, 0, FL_MENU_INACTIVE + FL_MENU_DIVIDER},		// nothing to do again, therefore inactive
@@ -458,7 +612,7 @@ Fl_Menu_Item MenuNothingSelected[] = {
 		{"Copy",	FL_ALT+'c',	0, 0, FL_MENU_INACTIVE},						// nothing selected, therefore inactive
 		{"Paste",	FL_ALT+'v',	0, 0, FL_MENU_INACTIVE},						// nothing on clipboard, therefore inactive
 		{0},
-
+*/
 	{"&Create",0,0,0,FL_SUBMENU},
 		{"Camera",			0,	CreateCamera },
 		{"Sets", 0,0,0,FL_SUBMENU},
@@ -483,50 +637,15 @@ static fltk::Group* AddFolder(fltk::Group* parent, const char* name, int open, f
 }
 
 int initfull = 0;
-int NUMB = 5;
-Fl_Button *border_button;
 
-void border_cb(Fl_Widget *o, void *p) {
-//	Fl_Window *w = (Fl_Window *)p;
-//	int d = ((Fl_Button *)o)->value();
-//	w->border(d);
-}
 
-void RightMenu_cb(Fl_Widget* w, void*) {
+void RightMenu_cb(Fl_Widget* w, void* p) {
 	Fl_Menu_* mw = (Fl_Menu_*)w;
-/*	const Fl_Menu_Item* m = mw->mvalue();
-	if (!m) {
-		//printf("NULL\n");
-	}
-	else if (m->shortcut()) {
-		//printf("%s - shortcut\n", m->label());
-	}
-	else {
-		//printf("%s\n", m->label());
-	}
-*/
+	fltk::Widget* pWidget = mw->mvalue();
+	fltk::Callback_p pCallback = pWidget->callback();
+	pCallback(w, p);
+	mw->value(0);					// reset to showing the root
 }
-
-/*
-void fullscreen_cb(Fl_Widget *o, void *p) {
-	static int px,py,pw,ph;
-	//fltk::Window *w = (fltk::Window *)p;
-	int d = ((Fl_Button *)o)->value();
-	if (d) {
-		px = sWorkspace->x();
-		py = sWorkspace->y();
-		pw = sWorkspace->w();
-		ph = sWorkspace->h();
-		sWorkspace->fullscreen();
-	} else {
-		sWorkspace->fullscreen_off(px,py,pw,ph);
-	}
-}
-*/
-
-
-
-
 
 
 
@@ -535,9 +654,9 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
                      LPTSTR    lpCmdLine,
                      int       nCmdShow)
 {
-	Renderer renderer;
-	Scene scene(&renderer);
+	Scene scene;
 	gScene = &scene;
+	scene.Init();
 
 	Vec3f viewpoint;
 	viewpoint[0] = k5;
@@ -554,12 +673,12 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 	up[1] = k0;
 	up[2] = k1;
 
-	WorkspaceWindow window(&scene, &renderer, 1024,600+30*NUMB, "Meshula Lab"); 
+	WorkspaceWindow window(&scene, 1024,800, "Meshula Lab"); 
 	window.end();
 	sWorkspace = &window;
 	scene.mp_Window = &window;
 
-	RenderWindow sw(&scene, &renderer, 215,10,window.w()-(10 + 235),window.h()-30*NUMB-20);
+	RenderWindow sw(&scene, 215,10,window.w()-(10 + 235), 600);
 	window.mp_RenderWindow = &sw;
 
 	window.add(sw);
@@ -575,31 +694,66 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 			fltk::InvisibleBox* pBox = new fltk::InvisibleBox(fltk::FLAT_BOX, 2, 2, 190, 24, "Camera Properties");
 			pBox->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
 			scene.m_CameraPropertyName = new fltk::Input(2, 30, 190, 24, "Name");
-			scene.m_CameraPropertyName->callback(ChangeCameraName);
+			scene.m_CameraPropertyName->callback(ChangePrimaryName);
 			scene.m_CameraPropertyName->when(fltk::WHEN_ENTER_KEY);
 			fltk::Button * b = new fltk::Button(2,60,100,23,"Activate");
 			b->callback(ActivateCamera_cb);
 		scene.m_CameraProperties->end();
-//		scene.m_CameraProperties->hide();
+		scene.m_CameraProperties->hide();
 
-		fltk::PopupMenu RightMouseButton(0,0,600,400,"&Main");
-		RightMouseButton.type(fltk::PopupMenu::POPUP3);
-		RightMouseButton.box(FL_NO_BOX);
-		RightMouseButton.menu(MenuNothingSelected);
+		scene.m_PropProperties = new fltk::ScrollGroup(10, 300, 200, 200);
+		scene.m_PropProperties->box(FL_ENGRAVED_FRAME);
+		scene.m_PropProperties->begin();
+			pBox = new fltk::InvisibleBox(fltk::FLAT_BOX, 2, 2, 190, 24, "Prop Properties");
+			pBox->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
+			scene.m_PropPropertyName = new fltk::Input(2, 30, 190, 24, "Name");
+			scene.m_PropPropertyName->callback(ChangePrimaryName);
+			scene.m_PropPropertyName->when(fltk::WHEN_ENTER_KEY);
+			scene.m_PropActive = new fltk::CheckButton(2, 60, 100, 23, "Simulate");
+			scene.m_PropActive->callback(PropSimulate_cb);
+			scene.m_PropActive->value(true);
+			scene.m_PropLink = new fltk::Button(2, 90, 100, 23, "Link");
+			//scene.m_PropLink->deactivate();
+			scene.m_PropLink->callback(CreateLink_cb);
+			scene.m_PropSpring = new fltk::Button(2, 120, 100, 23, "Spring");
+			//scene.m_PropSpring->deactivate();
+			scene.m_PropSpring->callback(CreateSpring_cb);
+		scene.m_PropProperties->end();
+		scene.m_PropProperties->hide();
+
+		scene.m_SetProperties = new fltk::ScrollGroup(10, 300, 200, 100);
+		scene.m_SetProperties->box(FL_ENGRAVED_FRAME);
+		scene.m_SetProperties->begin();
+			pBox = new fltk::InvisibleBox(fltk::FLAT_BOX, 2, 2, 190, 24, "Set Properties");
+			pBox->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
+			scene.m_SetPropertyName = new fltk::Input(2, 30, 190, 24, "Name");
+			scene.m_SetPropertyName->callback(ChangePrimaryName);
+			scene.m_SetPropertyName->when(fltk::WHEN_ENTER_KEY);
+			scene.m_SetCollider = new fltk::CheckButton(2,60,100,23,"Collider");
+			scene.m_SetCollider->callback(SetIsCollider_cb);
+		scene.m_SetProperties->end();
+		scene.m_SetProperties->hide();
+
+		scene.m_RMBMenu = new fltk::PopupMenu(0,0,600,400,"&Main");
+		scene.m_RMBMenu->type(fltk::PopupMenu::POPUP3);
+		scene.m_RMBMenu->box(FL_NO_BOX);
+		scene.m_RMBMenu->menu(MenuNothingSelected);
 
 		// note: in fltk 2, setting this callback means RightMenu_cb has to do the callbacks manually
 		// in fltk 1, that is not the case
-//		RightMouseButton.callback(RightMenu_cb);
+		scene.m_RMBMenu->callback(RightMenu_cb);
 
-		window.resizable(&RightMouseButton);
+		window.resizable(scene.m_RMBMenu);
 
-		int y = window.h()-30*NUMB;
+		int y = window.h() - 64;
 
-		Fl_Toggle_Button b2(50,y,window.w()-60,30,"Border");
-		b2.callback(border_cb, &sw);
-		b2.set();
-		border_button = &b2;
-		y+=30;
+		scene.m_Rewind	= new fltk::Button(5, y, 32, 32, "@|<");
+		scene.m_Rewind->callback(Rewind_cb);
+		scene.m_Play	= new fltk::Button(40, y, 32, 32, PLAY_LABEL);
+		scene.m_Play->callback(Play_cb);
+
+		scene.m_TimeDisplay = new fltk::Input(75, y, 70, 24);
+		scene.m_TimeDisplay->value(ZEROTIME_LABEL);
 
 		window.mp_StatusLabel = new fltk::Input(2, window.h()-26, window.w()-4, 24);
 		window.mp_StatusLabel->align(FL_ALIGN_INSIDE | FL_ALIGN_LEFT);
@@ -607,39 +761,30 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 
 	window.end();
 
-	scene.m_CameraModel		= new DrawMesh(&gStockMaterial);
-	scene.m_CameraModel->CreateFromOBJFile("data/motioncamera.obj");
-
-	scene.m_ArrowheadModel	= new DrawMesh(&gStockMaterial);
-	scene.m_ArrowheadModel->CreateFromOBJFile("data/arrowhead.obj");
-
-	scene.m_IcosaModel		= new DrawMesh(new DiffuseMaterial());
-	scene.m_IcosaModel->CreateFromOBJFile("data/icosahedron.obj");
-
 	folderSmall		= new fltk::xpmImage(folder_small);
 	fileSmall		= new fltk::xpmImage(file_small);
-	scene.SetIcons(new fltk::xpmImage(camera_icon), new fltk::xpmImage(teapot_icon), new fltk::xpmImage(teapot_icon));
+	scene.SetIcons(new fltk::xpmImage(camera_icon), new fltk::xpmImage(teapot_icon), new fltk::xpmImage(set_icon));
 
 	scene.m_LayersGroup		= AddFolder(scene.m_Browser, "Layers", 1, folderSmall);
 
 	scene.m_LayersGroup->begin();
-		fltk::ColorButton colorButton(50, y, 150, 30, "Background Color");
+		fltk::ColorButton colorButton(50, y, 150, 24, "Background Color");
 		colorButton.color(0,0,0,1);
 		colorButton.callback(BackgroundCB);
 	scene.m_LayersGroup->end();
 
-	scene.m_CameraList.m_Group	= AddFolder(scene.m_Browser, "Cameras", 1, folderSmall);
-	scene.m_SetList.m_Group		= AddFolder(scene.m_Browser, "Sets", 1, folderSmall);
-	scene.m_PropList.m_Group	= AddFolder(scene.m_Browser, "Props", 1, folderSmall);
-	scene.m_LightsGroup			= AddFolder(scene.m_Browser, "Lights", 1, folderSmall);
-	scene.m_ActorsGroup			= AddFolder(scene.m_Browser, "Actors", 1, folderSmall);
+	scene.m_CameraList.m_Group	= AddFolder(scene.m_Browser, "Cameras",		1, folderSmall);
+	scene.m_SetList.m_Group		= AddFolder(scene.m_Browser, "Sets",		1, folderSmall);
+	scene.m_PropList.m_Group	= AddFolder(scene.m_Browser, "Props",		1, folderSmall);
+	scene.m_LightsGroup			= AddFolder(scene.m_Browser, "Lights",		1, folderSmall);
+	scene.m_ActorsGroup			= AddFolder(scene.m_Browser, "Actors",		1, folderSmall);
 
 	window.show();//argc,argv);
 
 	scene.CreateCamera("Interactive");
-	Camera* pCamera = scene.GetCurrentCamera();
+	Camera* pCamera = scene.CurrentCamera();
 	pCamera->LookAt(viewpoint, interest, up);
-	renderer.BindCamera(pCamera);
+	scene.mp_Renderer->CurrentCamera(pCamera);
 
 	for (;window.visible();) {
 		if (window.iconic())// || !speed->value())

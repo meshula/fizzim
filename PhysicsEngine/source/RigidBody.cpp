@@ -56,18 +56,18 @@ using Physics::RigidBody;
 
 //////////////////// constructor/destructor
 
-RigidBody::RigidBody() : m_Active(true), m_Spinnable(false), m_Translatable(false), m_Collidable(false), m_pCollideGeo(0), m_pRender(0),
+RigidBody::RigidBody() : m_Active(true), m_Spinnable(false), m_Translatable(false), m_Collidable(false), m_pCollideGeo(0),
 	m_Collided(false)
 {
 	SetDefaults();
 }
 
-RigidBody::~RigidBody() { delete m_pCollideGeo; delete m_pRender; }
+RigidBody::~RigidBody() { delete m_pCollideGeo; }
 
 void RigidBody::SetDefaults()
 {
 	m_LinearVelocityDamp = Real(0.9995);
-	m_AngularVelocityDamp = Real(0.9995);
+	m_AngularVelocityDamp = Real(0.05);
 	m_Mass = k1;
 	m_OOMass = k1;
 	m_Extent[0] = kHalf;	// object extends to 1/2 from origin; ie, object is of unit size
@@ -79,6 +79,7 @@ void RigidBody::SetDefaults()
 	m_Acc.Clear();
 	m_Collided = false;
 	Vec3fZero(m_AccelPrev);
+	Vec3fZero(m_TorquePrev);
 }
 
 //////////////////// sets/gets
@@ -186,24 +187,6 @@ void RigidBody::CalculateInertiaTensor()
 	}
 }
 
-
-void RigidBody::Render() 
-{ 
-	if (m_pRender) {
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-
-		if (m_pCollideGeo->GetKind() == Collision::kC_Sphere) {
-			glTranslatef(m_StateT1.m_Position[0], m_StateT1.m_Position[1], m_StateT1.m_Position[2]);
-			float scale = (float) ((Collision::Sphere*) m_pCollideGeo)->m_Radius;
-			glScalef(scale, scale, scale);
-		}
-		m_pRender->Render(); 
-
-		glPopMatrix();
-	}
-}
-
 /*
               ___       _                       _   _
              |_ _|_ __ | |_ ___  __ _ _ __ __ _| |_(_) ___  _ __
@@ -245,7 +228,9 @@ bool RigidBody::ResetForNextTimeStep()
 
 	if (m_Spinnable) {
 		Real aDamp = -m_Mass * m_AngularVelocityDamp;
-		Vec3fSetScaled(m_Acc.m_Torque, aDamp, m_StateT0.m_AngularVelocity);	// input a torque opposing the angular velocity
+
+		/// @todo work out proper angular damping
+		Vec3fMultiplyAccumulate(m_Acc.m_Torque, aDamp, m_StateT0.m_AngularVelocity);	// input a torque opposing the angular velocity
 	}
 
 	m_Collided = false;
@@ -266,8 +251,8 @@ void RigidBody::Integrate1(Real dt, Vec3f gravity)
 	// if the body can spin:			
 	if (m_Spinnable) {		
 		Vec3fMultiplyAccumulate(m_StateT1.m_AngularMomentum, dt * kHalf, m_TorquePrev);					// L += 1/2 T * t
-																									// update angular velocity from momentum
-		if (m_InertialKind == Physics::kI_Sphere) {													// spheres are common enough to treat specially
+																										// update angular velocity from momentum
+		if (m_InertialKind == Physics::kI_Sphere) {														// spheres are common enough to treat specially
 			Vec3fSetScaled(m_StateT1.m_AngularVelocity, m_InertiaITD[0], m_StateT1.m_AngularMomentum);
 		}
 		else {	// must use the inertia tensor diagonal instead
@@ -277,9 +262,12 @@ void RigidBody::Integrate1(Real dt, Vec3f gravity)
 		//else { 
 		/// @todo if using full matrix for tensor, must do worldTensor = orientation * inverseinertiatensor * transpose(orientation) before multiplying
 		//} 
-
-		QuatInputAngularVelocity(m_StateT1.m_Orientation, dt, m_StateT1.m_AngularVelocity);				// R += t * angular velocity
+		QuatInputAngularVelocity(m_StateT1.m_Orientation, dt, m_StateT1.m_Orientation, m_StateT1.m_AngularVelocity);				// R += t * angular velocity
 	}
+}
+
+void RigidBody::Renormalize()
+{
 }
 
 // this is called after springs are calculated
@@ -287,13 +275,13 @@ void RigidBody::Integrate2(Real dt, Vec3f gravity)
 {
 	// if the body's position can change:
 	if (m_Translatable) {
-		Vec3fSetScaled(m_AccelPrev, m_OOMass, m_Acc.m_Force);									// dvdt = f / m     works for gravity? yes:  f = mg    a = mg / m = g
+		Vec3fSetScaled(m_AccelPrev, m_OOMass, m_Acc.m_Force);											// dvdt = f / m     works for gravity? yes:  f = mg    a = mg / m = g
 		if (m_Gravity) {
 			Vec3fAdd(m_AccelPrev, gravity);
 		}
 
-		Vec3fMultiplyAccumulate(m_StateT1.m_Velocity, dt * kHalf, m_AccelPrev);					// v += 1/2 a * t
-		Vec3fZero(m_Acc.m_Force);																// clear out the force accumulator
+		Vec3fMultiplyAccumulate(m_StateT1.m_Velocity, dt * kHalf, m_AccelPrev);							// v += 1/2 a * t
+		Vec3fZero(m_Acc.m_Force);																		// clear out the force accumulator
 	}
 
 	// if the body can spin:
@@ -304,3 +292,4 @@ void RigidBody::Integrate2(Real dt, Vec3f gravity)
 		Vec3fZero(m_Acc.m_Torque);																		// clear the torque accumulator
 	}
 }
+

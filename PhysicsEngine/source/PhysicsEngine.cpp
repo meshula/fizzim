@@ -211,7 +211,6 @@ uint32 Physics::Engine :: AddRigidBodySphere(Real radius)
 
 	pBody->SetInertialKind(kI_Sphere);
 	pBody->SetCollisionObject(pCollide);
-	pBody->SetRender(new GraphObj::Sphere());
 
 	//--------------------------------------------------------------
 	APILOG("%d = AddRigidBodySphere(%f)\n", id, radius);
@@ -231,7 +230,6 @@ uint32 Physics::Engine :: AddRigidBodyPlane(PMath::Plane& plane)
 	pBody->SetCollisionObject(pCollide);
 	pBody->SetSpinnable(false);
 	pBody->SetTranslatable(false);
-	pBody->SetRender(new GraphObj::Plane());
 
 	//--------------------------------------------------------------
 	APILOG("%d = AddRigidBodyPlane()\n", id);
@@ -457,8 +455,6 @@ void Physics::Engine :: SetRigidBodyVec3f(uint32 id, ERigidBodyVector prop, Vec3
 		case propExtent:
 			Vec3fSet(pBody->m_Extent, value);
 			if (pBody->GetInertialKind() == kI_Sphere) {
-				GraphObj::Sphere* pSphere = (GraphObj::Sphere*) pBody->m_pRender;
-				pSphere->m_Radius = value[0] * kHalf;
 				Collision::Sphere* pCSphere = (Collision::Sphere*) pBody->m_pCollideGeo;
 				pCSphere->m_Radius = value[0] * kHalf;
 			}
@@ -1063,6 +1059,7 @@ void Physics::Engine :: Simulate(Real dt)
 	}
 }
 
+/*
 void Physics::Engine :: Render()
 {
 	Physics::RigidBodyMap::iterator iter;
@@ -1093,3 +1090,4 @@ void Physics::Engine :: Render()
 
 	glPopMatrix();
 }
+*/

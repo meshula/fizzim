@@ -1,0 +1,39 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InsectAI", "InsectAI.vcproj", "{85EAC2FE-4A0F-4676-8790-7FC3CBC9224D}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Demo", "Demo.vcproj", "{F5A852FB-46F8-4020-8C0A-FD10BD2453AB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE} = {1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE}
+		{85EAC2FE-4A0F-4676-8790-7FC3CBC9224D} = {85EAC2FE-4A0F-4676-8790-7FC3CBC9224D}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Core", "..\Core\Core.vcproj", "{1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{85EAC2FE-4A0F-4676-8790-7FC3CBC9224D}.Debug.ActiveCfg = Debug|Win32
+		{85EAC2FE-4A0F-4676-8790-7FC3CBC9224D}.Debug.Build.0 = Debug|Win32
+		{85EAC2FE-4A0F-4676-8790-7FC3CBC9224D}.Release.ActiveCfg = Release|Win32
+		{85EAC2FE-4A0F-4676-8790-7FC3CBC9224D}.Release.Build.0 = Release|Win32
+		{F5A852FB-46F8-4020-8C0A-FD10BD2453AB}.Debug.ActiveCfg = Debug|Win32
+		{F5A852FB-46F8-4020-8C0A-FD10BD2453AB}.Debug.Build.0 = Debug|Win32
+		{F5A852FB-46F8-4020-8C0A-FD10BD2453AB}.Release.ActiveCfg = Release|Win32
+		{F5A852FB-46F8-4020-8C0A-FD10BD2453AB}.Release.Build.0 = Release|Win32
+		{1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE}.Debug.ActiveCfg = Debug|Win32
+		{1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE}.Debug.Build.0 = Debug|Win32
+		{1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE}.Release.ActiveCfg = Release|Win32
+		{1FCEE8C5-1D08-4A37-8F9A-CDBEB2EA16CE}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

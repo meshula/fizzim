@@ -15,6 +15,7 @@
 
 #include "PMath.h"
 #include "InsectAI.h"
+#include "Clock.h"
 
 #include "demo.h"
 
@@ -51,9 +52,6 @@ Demo::Demo() :
 	mMousex(0), mMousey(0), mDemoMode(0), VOpenGLMain() 
 {
 	ClearAll();
-	for (int i = 0; i < MAX_AI; ++i) {
-		m_Vehicles[i] = 0;
-	}
 }
 
 Demo::~Demo() { 
@@ -158,6 +156,7 @@ void DrawFilledCircle() {
 }
 
 void Demo::ClearAll() {
+	RemoveAllProxies();
 	m_Engine.RemoveAllEntities();
 	m_AICount = 0;
 }
@@ -165,15 +164,15 @@ void Demo::ClearAll() {
 void Demo::CreateDemoZero_Zero() {
 	m_DemoName = "Light Sensitive - linear response";
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
 		m_AI[m_AICount++] = m_Engine.AddEntity(pLight);
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Kind[m_AICount] = kVehicle;
-		m_Vehicles[m_AICount] = pVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Kind = kVehicle;
+		m_State[m_AICount].m_Vehicle = pVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -190,15 +189,15 @@ void Demo::CreateDemoZero_One() {
 	m_DemoName = "Light Sensitive with Buffer - delayed response";
 
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
 		m_AI[m_AICount++] = m_Engine.AddEntity(pLight);
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -210,15 +209,15 @@ void Demo::CreateDemoZero_One() {
 void Demo::CreateDemoZero_Two() {
 	m_DemoName = "Light Sensitive with Inverter";
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
 		m_AI[m_AICount++] = m_Engine.AddEntity(pLight);
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -230,15 +229,15 @@ void Demo::CreateDemoZero_Two() {
 void Demo::CreateDemoZero_Three() {
 	m_DemoName = "Light Sensitive with Threshold";
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
 		m_AI[m_AICount++] = m_Engine.AddEntity(pLight);
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -250,42 +249,42 @@ void Demo::CreateDemoZero_Three() {
 void Demo::CreateDemoOne() {
 	m_DemoName = "Light Sensitive Comparison";
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
 		m_AI[m_AICount++] = m_Engine.AddEntity(pLight);
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
 		BuildTestBrain(pVehicle, 0);
 		pVehicle->mMaxSpeed = randf(0.8f, 1.0f);
 		m_AI[m_AICount++] = m_Engine.AddEntity(pVehicle);
-	pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
 		BuildTestBrain(pVehicle, 1);
 		pVehicle->mMaxSpeed = randf(0.8f, 1.0f);
 		m_AI[m_AICount++] = m_Engine.AddEntity(pVehicle);
-	pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
 		BuildTestBrain(pVehicle, 2);
 		pVehicle->mMaxSpeed = randf(0.8f, 1.0f);
 		m_AI[m_AICount++] = m_Engine.AddEntity(pVehicle);
-	pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -297,15 +296,15 @@ void Demo::CreateDemoOne() {
 void Demo::CreateDemoTwo_Zero() {
 	m_DemoName = "Light Seeking - linear response";
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
 		m_AI[m_AICount++] = m_Engine.AddEntity(pLight);
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -317,42 +316,42 @@ void Demo::CreateDemoTwo_Zero() {
 void Demo::CreateDemoTwo() {
 	m_DemoName = "Light Seeking Comparison";
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
 		m_AI[m_AICount++] = m_Engine.AddEntity(pLight);
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
 		BuildTestBrain(pVehicle, 4);
 		pVehicle->mMaxSpeed = randf(0.8f, 1.0f);
 		m_AI[m_AICount++] = m_Engine.AddEntity(pVehicle);
-	pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
 		BuildTestBrain(pVehicle, 5);
 		pVehicle->mMaxSpeed = randf(0.8f, 1.0f);
 		m_AI[m_AICount++] = m_Engine.AddEntity(pVehicle);
-	pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
 		BuildTestBrain(pVehicle, 6);
 		pVehicle->mMaxSpeed = randf(0.8f, 1.0f);
 		m_AI[m_AICount++] = m_Engine.AddEntity(pVehicle);
-	pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-		m_Kind[m_AICount] = kVehicle;
+	pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+		m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -362,9 +361,9 @@ void Demo::CreateDemoTwo() {
 }
 
 void Demo::CreateLightSeekingAvoider() {
-	InsectAI::Vehicle* pVehicle = new InsectAI::Vehicle();
-		m_Vehicles[m_AICount] = pVehicle;
-	m_Kind[m_AICount] = kVehicle;
+	DemoVehicle* pVehicle = new DemoVehicle(&m_State[m_AICount]);;
+		m_State[m_AICount].m_Vehicle = pVehicle;
+	m_State[m_AICount].m_Kind = kVehicle;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = randf();
 		m_State[m_AICount].m_Position[1] = randf();
@@ -376,8 +375,8 @@ void Demo::CreateLightSeekingAvoider() {
 void Demo::CreateDemoThree() {
 	m_DemoName = "Light Seeking with Collision Avoidance";
 	ClearAll();
-	InsectAI::Light* pLight = new InsectAI::Light();
-		m_Kind[m_AICount] = kLight;
+	DemoLight* pLight = new DemoLight(&m_State[m_AICount]);
+		m_State[m_AICount].m_Kind = kLight;
 		m_State[m_AICount].m_Rotation = k0;
 		m_State[m_AICount].m_Position[0] = kHalf;
 		m_State[m_AICount].m_Position[1] = kHalf;
@@ -417,6 +416,8 @@ bool Demo::HandleKey(int key) {
 				case 6:		CreateDemoTwo();			break;
 				case 7:		CreateDemoThree();			break;
 			}
+
+			AddAllProxies();
 			break;
 
 		case SDLK_h:
@@ -425,12 +426,16 @@ bool Demo::HandleKey(int key) {
 			break;
 
 		case SDLK_PAGEUP:
+			// double the number of entities each time
 			if (mCurrentDemo == 7) {
 				int count = m_Engine.GetEntityCount() - 1; // subtract 1 for the sun
 				if (count < 100) {
 					for (i = 0; i < count; ++i) {
 						CreateLightSeekingAvoider();
 					}
+
+					RemoveAllProxies();
+					AddAllProxies();
 				}
 			}
 			break;
@@ -491,14 +496,33 @@ void Demo::WrapAround(float left, float right, float bottom, float top) {
 	}
 }
 
+void Demo::AddAllProxies() {
+	if (m_pNN) {
+		for (int i = 0; i < m_AICount; ++i) {
+			m_pNN->AddProxy(&m_State[i]);
+		}
+	}
+}
+
+void Demo::RemoveAllProxies() {
+	if (m_pNN) {
+		for (int i = 0; i < m_AICount; ++i) {
+				m_pNN->RemoveProxy(&m_State[i]);
+		}
+	}
+}
+
 void Demo::SetWindowSize(int width, int height, bool fullScreen) {
 	VOpenGLMain::SetWindowSize(width, height, fullScreen);				// mRight and mTop will get set
-	delete m_pNN;
 	PMath::Vec3f origin;
 	origin[0] = origin[1] = origin[2] = k0;
 	PMath::Vec3f dimensions;
 	dimensions[0] = dimensions[1] = dimensions[2] = 2.5f;
-	m_pNN = new NearestNeighbours(10, 10, 10, origin, dimensions);
+
+	RemoveAllProxies();
+	delete m_pNN;
+	m_pNN = new NearestNeighbours(origin, dimensions, 10, 10, 10);
+	AddAllProxies();
 }
 
 
@@ -800,7 +824,7 @@ static void RenderSensorConnections(InsectAI::Sensor* pSensor) {
 */
 }
 
-static void RenderVehicle(InsectAI::Vehicle* pVehicle, PhysState* pState) {
+static void RenderVehicle(DemoVehicle* pVehicle, PhysState* pState) {
 	if (pVehicle == 0)
 		return;
 
@@ -865,10 +889,10 @@ void Demo::RenderEntities()
 {
 	for (int i = 0; i < m_AICount; ++i) {
 		// render agent here
-		if (m_Kind[i] == kVehicle) {
-			RenderVehicle(m_Vehicles[i], &m_State[i]);
+		if (m_State[i].m_Kind == kVehicle) {
+			RenderVehicle(m_State[i].m_Vehicle, &m_State[i]);
 		}
-		else if (m_Kind[i] == kLight) {
+		else if (m_State[i].m_Kind == kLight) {
 			RenderLight(&m_State[i]);
 		}
 	}
@@ -886,7 +910,7 @@ void Demo::HighlightEntity(int id, float radius, float red, float green, float b
 	glPopMatrix();
 }
 
-static void MoveVehicle(InsectAI::Vehicle* pVehicle, PhysState* pState)
+static void MoveVehicle(DemoVehicle* pVehicle, PhysState* pState)
 {
 	// connect actuators to physics
 	for (int i = 0; i < pVehicle->GetActuatorCount(); ++i) {
@@ -910,8 +934,9 @@ void Demo::MoveEntities()
 {
 	for (int i = 0; i < m_AICount; ++i) {
 		// render agent here
-		if (m_Kind[i] == kVehicle) {
-			MoveVehicle(m_Vehicles[i], &m_State[i]);
+		if (m_State[i].m_Kind == kVehicle) {
+			MoveVehicle(m_State[i].m_Vehicle, &m_State[i]);
+			m_pNN->UpdateProxy(&m_State[i]);
 		}
 	}
 }
@@ -964,8 +989,8 @@ void DrawUserPrompts(char* name, char* mouse, char* keys)
 int main(int argc, char **argv) 
 {  
 	int done = 0;
-	uint32 prevTime;
-	uint32 newTime;
+	TimeVal prevTime;
+	TimeVal newTime;
 
 	fprintf(stderr, "Starting Insect AI demo\n");
 
@@ -977,7 +1002,9 @@ int main(int argc, char **argv)
 
 	fprintf(stderr, "SDL initialized\n");
 
-	prevTime = SDL_GetTicks();
+	Clock myClock;
+	myClock.Update();
+	prevTime = myClock.GetSimulationTime();
 
 	int width = 800;
 	int height = 800;
@@ -995,8 +1022,9 @@ int main(int argc, char **argv)
 #endif
 
 	while ( !done ) {
-		newTime = SDL_GetTicks();
-		float dt = ((float)(newTime - prevTime)) * 1.0f / 1000.0f;	// convert elapsed ms to elapsed seconds
+		myClock.Update();
+		newTime = myClock.GetSimulationTime();
+		float dt = (float)(newTime - prevTime);
 		prevTime = newTime;
 
 		pDemo->Update(dt);
@@ -1009,35 +1037,51 @@ int main(int argc, char **argv)
 	return 1;
 }
 
-InsectAI::DynamicState* Demo::GetState(InsectAI::Entity* pE)
-{
-	InsectAI::DynamicState* pRetVal = 0;
-	for (int i = 0; i < m_AICount; ++i) {
-		if (m_Vehicles[i] == pE) {
-			pRetVal = &m_State[i];
-			break;
-		}
-	}
-	return pRetVal;
-}
 
 InsectAI::DynamicState* Demo::GetNearest(InsectAI::Entity* pE, uint32 filter)
 {
 	InsectAI::DynamicState* pRetVal = 0;
-	Real nearest = 1.0e6f;
+	if (filter != 0) {
+		Real nearest = 1.0e6f;
+		Real radius;
 
-	PhysState* pState = (PhysState*) GetState(pE);
+		PhysState* pState = (PhysState*) pE->GetDynamicState();
 
-	for (int i = 0; i < m_AICount; ++i) {
-		if ((m_Kind[i] & filter) != 0) {
-			if (m_Vehicles[i] != pE) {
-				Real distSquared = pState->DistanceSquared(&m_State[i]);
-				if (distSquared < nearest) {
-					nearest = distSquared;
-					pRetVal = &m_State[i];
+		// if it's a light, simply search the entire database for the closest light
+		// (lq is not that fast when the search radius is similar to the size of the database)
+		if ((filter & kLight) != 0) {
+			for (int i = 0; i < m_AICount; ++i) {
+				if ((m_State[i].m_Kind & filter) != 0) {
+					if (m_State[i].m_Vehicle != pE) {
+						Real distSquared = pState->DistanceSquared(&m_State[i]);
+						if (distSquared < nearest) {
+							nearest = distSquared;
+							pRetVal = &m_State[i];
+						}
+					}
 				}
 			}
 		}
+		else {
+			radius = 0.15f;	// this should really account for 2 * maximum velocity of a bug
+			PhysState* pNearest = (PhysState*) m_pNN->FindNearestNeighbour(pState->GetPosition(), radius, filter, pState);
+			return pNearest;
+
+			// brute force search for comparison
+			for (int i = 0; i < m_AICount; ++i) {
+				if ((m_State[i].m_Kind & filter) != 0) {
+					if (m_State[i].m_Vehicle != pE) {
+						Real distSquared = pState->DistanceSquared(&m_State[i]);
+						if (distSquared < nearest) {
+							nearest = distSquared;
+							pRetVal = &m_State[i];
+						}
+					}
+				}
+			}
+			return pNearest;
+		}
+
 	}
 	return pRetVal;
 }

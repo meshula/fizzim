@@ -36,7 +36,6 @@ namespace InsectAI {
 		EntityDatabase() { }
 		virtual ~EntityDatabase() { }
 
-		virtual DynamicState* GetState(Entity*) = 0;
 		virtual DynamicState* GetNearest(Entity*, uint32 filter) = 0;
 	};
 

@@ -32,7 +32,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #ifndef _RIGIDBODY_H_
 #define _RIGIDBODY_H_
 
-#include "GraphObj.h"
 #include "CollisionEngineDef.h"
 #include "PhysicsEngineDef.h"
 #include "DynamicState.h"
@@ -93,7 +92,7 @@ public:
 	inline	Real			GetOOMass() const { return m_Translatable ? m_OOMass : k0; }		// if it can't move, it weighs 1,000,000
 			void			CalculateInertiaTensor();
 
-	virtual	void			Renormalize() { }
+	virtual	void			Renormalize();
 			void			SetDefaults();
 
 	inline	void			SetGravity(bool val)		{ m_Gravity = val;			}
@@ -112,11 +111,6 @@ public:
 
 	inline	Real			GetAngularVelocityDamp() const		{ return m_AngularVelocityDamp * Real(1.0f / 0.995f); }	// return the value the app actually input in the first place
 	inline	Real			GetLinearVelocityDamp() const		{ return m_LinearVelocityDamp * Real(1.0f / 0.995f); }	// return the value the app actually input in the first place
-
-			void			SetRender(GraphObj::Base * pObj) { m_pRender = pObj; }			//!< attach a render object, for debugging only
-	virtual	void			Render();														//!< render physics body, for debugging only
-
-	GraphObj::Base*			m_pRender;
 
 	RigidAccumulator		m_Acc;					//!< accumulated forces and torques
 	DynamicState			m_StateT0;				//!< state at the beginning of the time step

@@ -31,10 +31,7 @@ public:
 
 	void	SetAtRest()
 	{
-		m_Orientation[0] = Real(0.0f);
-		m_Orientation[0] = Real(0.0f);
-		m_Orientation[0] = Real(0.0f);
-		m_Orientation[0] = Real(1.0f);
+		PMath::QuatFromEuler(m_Orientation, 0, 0, 0);
 		PMath::Vec3fZero(m_Position);
 		PMath::Vec3fZero(m_Velocity);
 		PMath::Vec3fZero(m_AngularVelocity);

@@ -236,6 +236,7 @@ namespace PMath {
 
 		Plane(const Vec3f point, const Vec3f normal) {
 			Vec3fSet(m_Normal, normal);
+			//Vec3fNormalize(m_Normal, normal);				// would someone ever pass in a non-normalized normal?
 			m_D = -Vec3fDot(normal, point);
 		}
 

@@ -41,9 +41,9 @@ namespace InsectAI {
 				Entity() { }
 		virtual ~Entity() { }
 
-		virtual void			Update(float dt)						= 0;
-		virtual	uint32			GetKind() const							= 0;
-		virtual DynamicState*	GetDynamicState()						= 0;
+		virtual void			Update(float dt)			= 0;
+		virtual	uint32			GetKind() const				= 0;
+		virtual DynamicState*	GetDynamicState()			= 0;
 	};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,14 +58,14 @@ namespace InsectAI {
 				int				AddSensor(Sensor* pSensor);
 				int				AddActuator(Actuator* pActuator);
 
-		virtual bool			Sense(EntityDatabase*)	= 0;
-		virtual void			ClearSenses(float dt)										= 0;
+		virtual bool			Sense(EntityDatabase*)		= 0;
+		virtual void			ClearSenses(float dt)		= 0;
 
-				int				GetSensorCount() const										{ return m_MaxSensor; }
-				int				GetActuatorCount() const									{ return m_MaxActuator; }
+				int				GetSensorCount() const		{ return m_MaxSensor; }
+				int				GetActuatorCount() const	{ return m_MaxActuator; }
 
-				Sensor*			GetSensor(int i) const										{ return m_Sensors[i]; }
-				Actuator*		GetActuator(int i) const									{ return m_Actuators[i]; }
+				Sensor*			GetSensor(int i) const		{ return m_Sensors[i]; }
+				Actuator*		GetActuator(int i) const	{ return m_Actuators[i]; }
 
 	protected:
 				int				m_MaxSensor;
@@ -86,8 +86,8 @@ namespace InsectAI {
 		virtual ~Light();
 
 				void			Update(float dt);
-				uint32			GetKind() const							{ return kKindLight; }
-		static	uint32			GetStaticKind()							{ return kKindLight; }
+				uint32			GetKind() const				{ return kKindLight; }
+		static	uint32			GetStaticKind()				{ return kKindLight; }
 	};
 
 }	// end namespace InsectAI

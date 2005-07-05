@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Coding\SDL-1.2.5\include&quot;"
+				AdditionalIncludeDirectories="$(ProjectDir)..\..\SDL-1.2.8\include"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -60,7 +60,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;C:\Coding\SDL-1.2.5\include&quot;"
+				AdditionalIncludeDirectories="$(ProjectDir)\..\..\SDL-1.2.8\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="4"
 				UsePrecompiledHeader="2"
@@ -133,7 +133,7 @@
 				RelativePath=".\PMath.cpp">
 			</File>
 			<File
-				RelativePath="..\..\Sdl-1.2.5\src\main\win32\SDL_main.c">
+				RelativePath="..\..\Sdl-1.2.8\src\main\win32\SDL_win32_main.c">
 			</File>
 			<File
 				RelativePath=".\TextScanner.cpp">

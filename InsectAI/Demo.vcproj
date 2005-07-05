@@ -19,7 +19,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\source&quot;;$(ProjectDir)\include;$(ProjectDir)\..\Core;&quot;C:\Coding\SDL-1.2.5\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\source&quot;;&quot;$(ProjectDir)\include&quot;;&quot;$(ProjectDir)\..\Core&quot;;&quot;$(ProjectDir)\..\..\SDL-1.2.8\include&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
@@ -35,7 +35,7 @@
 				AdditionalDependencies="opengl32.lib glu32.lib sdl.lib glaux.lib"
 				OutputFile="$(OutDir)/Demo.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;C:\Coding\SDL-1.2.5\VisualC\SDL\Debug&quot;"
+				AdditionalLibraryDirectories="&quot;$(ProjectDir)..\..\SDL-1.2.8\VisualC7\SDL\Debug&quot;"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile="$(OutDir)/Demo.pdb"
 				SubSystem="2"
@@ -69,7 +69,7 @@
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\source&quot;;$(ProjectDir)\include;$(ProjectDir)\..\Core;&quot;C:\Coding\SDL-1.2.5\include&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\source&quot;;&quot;$(ProjectDir)\include&quot;;&quot;$(ProjectDir)\..\Core&quot;;&quot;$(ProjectDir)\..\..\SDL-1.2.8\include&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS"
 				RuntimeLibrary="4"
 				UsePrecompiledHeader="2"
@@ -83,7 +83,7 @@
 				AdditionalDependencies="opengl32.lib glu32.lib sdl.lib glaux.lib"
 				OutputFile="$(OutDir)/Demo.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="C:\Coding\SDL-1.2.5\VisualC\SDL\Debug"
+				AdditionalLibraryDirectories="$(ProjectDir)\..\..\SDL-1.2.8\VisualC7\SDL\Release"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
 				OptimizeReferences="2"

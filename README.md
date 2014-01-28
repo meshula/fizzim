@@ -9,3 +9,6 @@ The Insect AI demos I made for AI Wisdom.
 The simple Physics Engine described in my Game Engine Gems article.
 
 Various old engine components. 
+
+Also includes the beginnings of an old level editor using FLTK from back when FLTK was all the rage with VFX houses.
+
